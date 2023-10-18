@@ -87,7 +87,12 @@ for f in sequence_files:
                                 BABA += 1
                         
                 #Calculate the D-statistic
-                D = (ABBA -BABA) / (ABBA + BABA)
+                #print(f"D = ({ABBA} - {BABA}) / ({ABBA} + {BABA})")
+                if ABBA + BABA > 0:
+                        D = (ABBA - BABA) / (ABBA + BABA)
+                else:
+                        D = "NA"
+
                 #CSV file
                 df.loc[j] = {'Window number' :j + 1, 'Window start site' :start + 1, 'Window stop site':stop, 'Number of ABBA sites': ABBA, 'Number of BABA sites':BABA, 'D-statistic for window':D}
         output_file = f + '.csv'
