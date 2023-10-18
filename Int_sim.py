@@ -30,7 +30,8 @@ parser = argparse.ArgumentParser(description='Script for simulating introgressio
 #Add arguments
 parser.add_argument('-j', '--JOBname', type=str, metavar='', required=True, help='Unique job name for this run of this script. Avoid including spaces or special characters ("_" is ok)') 
 parser.add_argument('-s', '--Seq_len', type=int, metavar='', required=True, help='Specify an interger to set length of total simulateed alignment (e.g. 20000000') 
-parser.add_argument('-p', '--Prop_int', type=float, metavar='', required=True, help='Specify the proportion of genome to be introgressed with each introgression event (e.g. 0.2') 
+parser.add_argument('-p', '--Prop_int', type=float, metavar='', required=True, help='Specify the proportion of genome to be introgressed with each introgression event (e.g. 0.2)')
+parser.add_argument('-m', '--Mut_rate', type=float, metavar='', required=True, help='Specify the mutation rate (e.g. 0.0000001)')
 
 #Define the parser
 args = parser.parse_args()
@@ -38,6 +39,7 @@ args = parser.parse_args()
 JOBname=args.JOBname
 Seq_len=args.Seq_len
 Prop_int=args.Prop_int
+Mut_rate=args.Mut_rate
 
 
 #JOBname="MYTEST"
@@ -102,7 +104,7 @@ ts = msprime.sim_ancestry(
 
 
 # Generate mutations on the tree sequence
-ts_mutes = msprime.sim_mutations(ts, rate=1e-8, random_seed=None)
+ts_mutes = msprime.sim_mutations(ts, rate=Mut_rate, random_seed=None)
 
 
 #write a fasta file
@@ -189,7 +191,7 @@ plt.xlabel("Genomic position")
 plt.ylim(0, 5)
 plt.yticks([])
 plt.legend()
-plt.show()
+#plt.show()
 
 fig.savefig(JOBname+".pdf")
 
