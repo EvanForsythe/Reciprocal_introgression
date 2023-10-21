@@ -31,8 +31,14 @@ P3 = args.P3
 #set base path
 sequence_base_folder_path = seq_file
 sequence_files = glob.glob(sequence_base_folder_path)
-
-df = pd.DataFrame(columns = ['Window number', 'Window start site', 'Window stop site', 'Number of ABBA sites', 'Number of BABA sites', 'D-statistic for window'])
+col1 = 'Window_Number'
+col2 = 'Window_Start_Site'
+col3 = 'Window_Stop_Site'
+col4 = 'Number_of_ABBA_Sites'
+col5 = 'Number_of_BABA_Sites'
+col6 = 'Number_of_AABB_Sites'
+col7 = 'D-Satistic'
+df = pd.DataFrame(columns = [col1,col2,col3,col4,col5,col6,col7])
 
 r1 = re.compile(P1)
 r2 = re.compile(P2)
@@ -76,11 +82,12 @@ for f in sequence_files:
                 stop = start + win_len 
                 ABBA = 0
                 BABA = 0
+                AABB = 0
                 for i in range(start, stop):
                         if sequence_data[P1][i] == "-" or sequence_data[P2][i] == "-"  or sequence_data[P3][i] == "-" or sequence_data[O][i] == "-":
                                 pass #ignores gaps
                         elif  sequence_data[P1][i]  == sequence_data[P2][i]  == sequence_data[P3][i] == sequence_data[O][i]:
-                                pass #Non-polymorphic
+                                AABB += 1 #Non-polymorphic
                         elif sequence_data[O][i] == sequence_data[P1][i]  and sequence_data[P2][i] == sequence_data[P3][i]:
                                 ABBA += 1
                         elif sequence_data[O][i] == sequence_data[P2][i] and sequence_data[P1][i] == sequence_data[P3][i]:
@@ -91,10 +98,10 @@ for f in sequence_files:
                 if ABBA + BABA > 0:
                         D = (ABBA - BABA) / (ABBA + BABA)
                 else:
-                        D = "NA"
+                        D = 0
 
                 #CSV file
-                df.loc[j] = {'Window number' :j + 1, 'Window start site' :start + 1, 'Window stop site':stop, 'Number of ABBA sites': ABBA, 'Number of BABA sites':BABA, 'D-statistic for window':D}
+                df.loc[j] = {col1 :j + 1, col2 :start + 1, col3 :stop, col4: ABBA, col5 :BABA,col6 :AABB, col7 :D}
         output_file = f + '.csv'
         df.to_csv(output_file, index=False)
         df.dropna()
