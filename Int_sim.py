@@ -32,6 +32,8 @@ parser.add_argument('-j', '--JOBname', type=str, metavar='', required=True, help
 parser.add_argument('-s', '--Seq_len', type=int, metavar='', required=True, help='Specify an interger to set length of total simulateed alignment (e.g. 20000000') 
 parser.add_argument('-p', '--Prop_int', type=float, metavar='', required=True, help='Specify the proportion of genome to be introgressed with each introgression event (e.g. 0.2)')
 parser.add_argument('-m', '--Mut_rate', type=float, metavar='', required=True, help='Specify the mutation rate (e.g. 0.0000001)')
+parser.add_argument('-r', '--Recomb_rate', type=float, metavar='', required=True, help='Specify the mutation rate (e.g. 0.00000001)')
+
 
 #Define the parser
 args = parser.parse_args()
@@ -121,12 +123,23 @@ replace_cmd3="sed -i '' 's/n3/Chimpanzee/' "+JOBname+".fa"
 #Run all the commands (if it contains strings expected in the command, this is a precautin of using shell=True)
 if re.search(JOBname, replace_cmd0): #Check if cmd contains expected string and run if so
     subprocess.call(replace_cmd0, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+else:
+	print(f"unable to run the following find/replace command: {replace_cmd0}")
+
 if re.search(JOBname, replace_cmd1): #Check if cmd contains expected string and run if so
     subprocess.call(replace_cmd1, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+else:
+	print(f"unable to run the following find/replace command: {replace_cmd1}")
+
 if re.search(JOBname, replace_cmd2): #Check if cmd contains expected string and run if so
     subprocess.call(replace_cmd2, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+else:
+	print(f"unable to run the following find/replace command: {replace_cmd2}")
+
 if re.search(JOBname, replace_cmd3): #Check if cmd contains expected string and run if so
     subprocess.call(replace_cmd3, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+else:
+	print(f"unable to run the following find/replace command: {replace_cmd3}")
 
 
 ## Track the tracts that underwent migration
