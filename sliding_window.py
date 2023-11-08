@@ -7,6 +7,8 @@ from Bio import AlignIO
 import re
 import glob
 import sys
+import matplotlib
+import matplotlib.pyplot as plt
 
 print('Arguments: ', str(sys.argv))
 #Create an argument parser object
@@ -37,7 +39,7 @@ col3 = 'Window_Stop_Site'
 col4 = 'Number_of_ABBA_Sites'
 col5 = 'Number_of_BABA_Sites'
 col6 = 'Number_of_AABB_Sites'
-col7 = 'D-Satistic'
+col7 = 'D-Statistic'
 df = pd.DataFrame(columns = [col1,col2,col3,col4,col5,col6,col7])
 
 r1 = re.compile(P1)
@@ -83,15 +85,19 @@ for f in sequence_files:
                 ABBA = 0
                 BABA = 0
                 AABB = 0
+                AAAA = 0
                 for i in range(start, stop):
                         if sequence_data[P1][i] == "-" or sequence_data[P2][i] == "-"  or sequence_data[P3][i] == "-" or sequence_data[O][i] == "-":
                                 pass #ignores gaps
                         elif  sequence_data[P1][i]  == sequence_data[P2][i]  == sequence_data[P3][i] == sequence_data[O][i]:
-                                AABB += 1 #Non-polymorphic
+                                AAAA += 1 #Non-polymorphic
                         elif sequence_data[O][i] == sequence_data[P1][i]  and sequence_data[P2][i] == sequence_data[P3][i]:
                                 ABBA += 1
                         elif sequence_data[O][i] == sequence_data[P2][i] and sequence_data[P1][i] == sequence_data[P3][i]:
                                 BABA += 1
+                        elif sequence_data[O][i] == sequence_data[P3][i] and sequence_data[P1][i] == sequence_data[P2][i]:
+                                AABB += 1
+
                         
                 #Calculate the D-statistic
                 #print(f"D = ({ABBA} - {BABA}) / ({ABBA} + {BABA})")
@@ -104,4 +110,8 @@ for f in sequence_files:
                 df.loc[j] = {col1 :j + 1, col2 :start + 1, col3 :stop, col4: ABBA, col5 :BABA,col6 :AABB, col7 :D}
         output_file = f + '.csv'
         df.to_csv(output_file, index=False)
-        df.dropna()
+        df.dropna() #removes missing values
+        plot = df.plot(title = 'X-stat plot', x = 'Window_Number', y = 'D-Statistic', ylim = (-1,1))
+       # plt.xlabel('Window Number')
+       # plt.ylabel('D-Statistic')
+        plt.savefig('savedfig1.png')
