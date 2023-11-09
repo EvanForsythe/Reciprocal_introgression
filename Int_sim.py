@@ -17,6 +17,7 @@ import tskit
 import os
 import re
 import argparse
+import math
 
 #Set wd
 working_dir = sys.path[0]+'/' 
@@ -32,7 +33,8 @@ parser.add_argument('-j', '--JOBname', type=str, metavar='', required=True, help
 parser.add_argument('-s', '--Seq_len', type=int, metavar='', required=True, help='Specify an interger to set length of total simulateed alignment (e.g. 20000000') 
 parser.add_argument('-p', '--Prop_int', type=float, metavar='', required=True, help='Specify the proportion of genome to be introgressed with each introgression event (e.g. 0.2)')
 parser.add_argument('-m', '--Mut_rate', type=float, metavar='', required=True, help='Specify the mutation rate (e.g. 0.0000001)')
-parser.add_argument('-r', '--Recomb_rate', type=float, metavar='', required=True, help='Specify the mutation rate (e.g. 0.00000001)')
+parser.add_argument('-r', '--Recomb_rate', type=float, metavar='', required=True, help='Specify the recomb rate (e.g. 0.00000001)')
+parser.add_argument('-n', '--Ne', type=int, metavar='', required=True, help='Specify the effective pop size (Ne) (e.g. 10000)')
 
 
 #Define the parser
@@ -42,11 +44,9 @@ JOBname=args.JOBname
 Seq_len=args.Seq_len
 Prop_int=args.Prop_int
 Mut_rate=args.Mut_rate
+Recomb_rate=args.Recomb_rate
+Ne=args.Ne
 
-
-#JOBname="MYTEST"
-#Seq_len=20000000
-#Prop_int=0.2
 
 
 #Get list of taxa
@@ -62,7 +62,6 @@ sequence_length=Seq_len
 time_units = 1000 / 25  # Conversion factor for kya to generations
 demography = msprime.Demography()
 # The same size for all populations; highly unrealistic!
-Ne = 10**4
 demography.add_population(name="Africa", initial_size=Ne)
 demography.add_population(name="Eurasia", initial_size=Ne)
 demography.add_population(name="Neanderthal", initial_size=Ne)
@@ -70,28 +69,28 @@ demography.add_population(name="Chimpanzee", initial_size=Ne)
 
 # introgression 50 kya
 demography.add_mass_migration(
-    time=50 * time_units, source='Eurasia', dest='Neanderthal', proportion=Prop_int)
+    time=1000 * time_units, source='Eurasia', dest='Neanderthal', proportion=Prop_int)
 
 #opposite direction introgression
 # introgression 50 kya
 demography.add_mass_migration(
-    time=50 * time_units, source='Neanderthal', dest='Eurasia', proportion=Prop_int)
+    time=1000 * time_units, source='Neanderthal', dest='Eurasia', proportion=Prop_int)
 
 
 # Eurasian 'merges' backwards in time into Africa population, 70 kya
 demography.add_mass_migration(
-    time=70 * time_units, source='Eurasia', dest='Africa', proportion=1)
+    time=1500 * time_units, source='Eurasia', dest='Africa', proportion=1)
 
 # Neanderthal 'merges' backwards in time into African population, 300 kya
 demography.add_mass_migration(
-    time=300 * time_units, source='Neanderthal', dest='Africa', proportion=1)
+    time=3000 * time_units, source='Neanderthal', dest='Africa', proportion=1)
 
 # Africa 'merges' backwards in time into Chimp population, TBD kya
 demography.add_mass_migration(
-    time=500 * time_units, source='Africa', dest='Chimpanzee', proportion=1)
+    time=5000 * time_units, source='Africa', dest='Chimpanzee', proportion=1)
 
 ts = msprime.sim_ancestry(
-    recombination_rate=1e-9,
+    recombination_rate=Recomb_rate,
     sequence_length=sequence_length, 
     samples=[
         msprime.SampleSet(1, ploidy=1, population='Africa'),
@@ -180,9 +179,14 @@ recip_introgression = find_overlap_intervals(migrating_nead_to_euro, migrating_e
 
 
 #Create a plot of introgression tracts
+#Locations of vert lines
+first_quart = math.floor(Seq_len*0.25)
+halfway = math.floor(Seq_len*0.5)
+third_quart = math.floor(Seq_len*0.75)
 
 
-fig = plt.figure(figsize=(8.0,8.0))
+
+fig = plt.figure(figsize=(10.0,5.0))
 
 ### plot the introgressed tracts N -> E
 plt.hlines(
@@ -197,11 +201,15 @@ plt.hlines(
 plt.hlines(
     [3] * len(recip_introgression), recip_introgression[:,0], recip_introgression[:,1], color="C2", lw=10, label="Reciprocal introgression")
 
+plt.axvline(x=first_quart, color='b', linestyle='-')
+plt.axvline(x=halfway, color='b', linestyle='-')
+plt.axvline(x=third_quart, color='b', linestyle='-')
+
 
 #Format plot
 plt.title(f"Introgressed tracks")
 plt.xlabel("Genomic position")
-plt.ylim(0, 5)
+plt.ylim(0, 4)
 plt.yticks([])
 plt.legend()
 #plt.show()

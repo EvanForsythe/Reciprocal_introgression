@@ -8,6 +8,7 @@ import re
 import glob
 import sys
 import matplotlib
+import math
 import matplotlib.pyplot as plt
 
 print('Arguments: ', str(sys.argv))
@@ -110,8 +111,24 @@ for f in sequence_files:
                 df.loc[j] = {col1 :j + 1, col2 :start + 1, col3 :stop, col4: ABBA, col5 :BABA,col6 :AABB, col7 :D}
         output_file = f + '.csv'
         df.to_csv(output_file, index=False)
-        df.dropna() #removes missing values
-        plot = df.plot(title = 'X-stat plot', x = 'Window_Number', y = 'D-Statistic', ylim = (-1,1))
-       # plt.xlabel('Window Number')
-       # plt.ylabel('D-Statistic')
-        plt.savefig('savedfig1.png')
+        
+        #df.dropna() #removes missing values
+        
+        
+        #Locations of vert lines
+        first_quart = math.ceil(n_windows*0.25)
+        halfway = math.ceil(n_windows*0.5)
+        third_quart = math.ceil(n_windows*0.75)
+        
+        
+        plot=df.plot(title = 'D-stat plot', x = 'Window_Number', y = 'D-Statistic', ylim = (-1.1,1.1), figsize=(10,5))
+        plt.xlabel('Window Number')
+        plt.ylabel('D-Statistic')
+        plt.axhline(y=0, color='r', linestyle='-')
+        plt.axvline(x=first_quart, color='b', linestyle='-')
+        plt.axvline(x=halfway, color='b', linestyle='-')
+        plt.axvline(x=third_quart, color='b', linestyle='-')
+        #plt.savefig('savedfig1.png')
+        
+        plt.savefig(f+"_Dstat.pdf")
+
