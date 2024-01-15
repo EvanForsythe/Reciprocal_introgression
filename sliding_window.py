@@ -109,7 +109,7 @@ for f in sequence_files:
 
                 #CSV file
                 df.loc[j] = {col1 :j + 1, col2 :start + 1, col3 :stop, col4: ABBA, col5 :BABA,col6 :AABB, col7 :D}
-        output_file = f + '.csv'
+        output_file = os.path.splitext(f)[0] + '_slidingwindow.csv'
         df.to_csv(output_file, index=False)
         
         #df.dropna() #removes missing values
@@ -130,6 +130,7 @@ for f in sequence_files:
         plt.axvline(x=third_quart, color='b', linestyle='-')
         #plt.savefig('savedfig1.png')
         
-        plt.savefig(f+"_Dstat.pdf") 
+        fig_file = os.path.splitext(f)[0] + '_slidingwindow.pdf'
+        plt.savefig(fig_file) 
 
 
