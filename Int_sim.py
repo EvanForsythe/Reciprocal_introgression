@@ -18,6 +18,7 @@ import os
 import re
 import argparse
 import math
+import pandas as pd
 
 #Set wd
 working_dir = sys.path[0]+'/' 
@@ -177,7 +178,6 @@ def find_overlap_intervals(arr1, arr2):
 recip_introgression = find_overlap_intervals(migrating_nead_to_euro, migrating_euro_to_nean)
 
 
-
 #Create a plot of introgression tracts
 #Locations of vert lines
 first_quart = math.floor(Seq_len*0.25)
@@ -216,5 +216,20 @@ plt.legend()
 
 fig.savefig(JOBname+".pdf")
 
+#Output to CSV
+col1 = "Introgression Type"
+col2 = "Start Site"
+col3 = "Stop Site"
+df = pd.DataFrame(columns = [col1,col2,col3])
 
+for migration in migrating_nead_to_euro:
+	 df.loc[len(df)] = {col1: "N to E", col2: migration[0], col3: migration[1]}
 
+for migration in migrating_euro_to_nean:
+	df.loc[len(df)] = {col1: "E to N", col2: migration[0], col3: migration[1]}
+
+for migration in recip_introgression:
+	df.loc[len(df)] = {col1: "Recip", col2: migration[0], col3: migration[1]}
+
+output_file = JOBname + ".csv"
+df.to_csv(output_file, index=False)
