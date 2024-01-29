@@ -24,7 +24,7 @@ import pandas as pd
 working_dir = sys.path[0]+'/' 
 os.chdir(working_dir)
 
-#os.chdir('/Users/esforsythe/Documents/OSU/Work/Research/Reciprocal_introgression/')
+#os.chdir('/Users/esforsythe/Documents/OSU/Work/Research/Reciprocal_introgression/Reciprocal_introgression/')
 
 #Set up an argumanet parser
 parser = argparse.ArgumentParser(description='Script for simulating introgression')
@@ -48,57 +48,71 @@ Mut_rate=args.Mut_rate
 Recomb_rate=args.Recomb_rate
 Ne=args.Ne
 
-
+'''
+#Arguments for testing
+JOBname="reconfig"
+Seq_len=2000000
+Prop_int=0.2
+Mut_rate=0.0000001
+Recomb_rate=0.00000001
+Ne=10000
+'''
+#Pop1=Africa
+#Pop2=Eurasia
+#POp3=Neanderthal
+#Pop4=Chimanzee
 
 #Get list of taxa
-taxa_names=["Africa", "Eurasia", "Neanderthal", "Chimpanzee"]
+taxa_names=["Pop1", "Pop2", "Pop3", "Outgroup"]
 
 #set up a highly simplified demographic history of human+Neanderthal demography and simulate a single chromosome of 20Mb in length
 
 #Assign sequence length
-sequence_length=Seq_len
+#REMOVE####sequence_length=Seq_len
 
 
 #Setup the simulations
 time_units = 1000 / 25  # Conversion factor for kya to generations
 demography = msprime.Demography()
-# The same size for all populations; highly unrealistic!
-demography.add_population(name="Africa", initial_size=Ne)
-demography.add_population(name="Eurasia", initial_size=Ne)
-demography.add_population(name="Neanderthal", initial_size=Ne)
-demography.add_population(name="Chimpanzee", initial_size=Ne)
+
+
+#Loop through taxa and add each as a population
+for t_name in taxa_names:
+    demography.add_population(name=t_name, initial_size=Ne)
+    print(f'Adding population: {t_name}')
+
 
 # introgression 50 kya
 demography.add_mass_migration(
-    time=1000 * time_units, source='Eurasia', dest='Neanderthal', proportion=Prop_int)
+    time=1000 * time_units, source="Pop2", dest="Pop3", proportion=Prop_int)
 
 #opposite direction introgression
 # introgression 50 kya
 demography.add_mass_migration(
-    time=1000 * time_units, source='Neanderthal', dest='Eurasia', proportion=Prop_int)
+    time=1000 * time_units, source="Pop3", dest="Pop2", proportion=Prop_int)
 
-
-# Eurasian 'merges' backwards in time into Africa population, 70 kya
+# Speciation event
 demography.add_mass_migration(
-    time=1500 * time_units, source='Eurasia', dest='Africa', proportion=1)
+    time=2000 * time_units, source="Pop2", dest="Pop1", proportion=1)
 
-# Neanderthal 'merges' backwards in time into African population, 300 kya
+# Speciation event
 demography.add_mass_migration(
-    time=3000 * time_units, source='Neanderthal', dest='Africa', proportion=1)
+    time=3000 * time_units, source="Pop3", dest="Pop1", proportion=1)
 
-# Africa 'merges' backwards in time into Chimp population, TBD kya
+# Speciation event
 demography.add_mass_migration(
-    time=5000 * time_units, source='Africa', dest='Chimpanzee', proportion=1)
+    time=5000 * time_units, source="Pop1", dest="Outgroup", proportion=1)
+
+
 
 ts = msprime.sim_ancestry(
     recombination_rate=Recomb_rate,
-    sequence_length=sequence_length, 
+    sequence_length=Seq_len, 
     samples=[
-        msprime.SampleSet(1, ploidy=1, population='Africa'),
-        msprime.SampleSet(1, ploidy=1, population='Eurasia'),
-        # Neanderthal sample taken 30 kya
-        msprime.SampleSet(1, ploidy=1, time=30 * time_units, population='Neanderthal'),
-        msprime.SampleSet(1, ploidy=1, population='Chimpanzee'),
+        msprime.SampleSet(1, ploidy=1, population="Pop1"),
+        msprime.SampleSet(1, ploidy=1, population="Pop2"),
+        msprime.SampleSet(1, ploidy=1, population="Pop3"),
+        msprime.SampleSet(1, ploidy=1, population="Outgroup"),
     ],
     demography = demography,
     record_migrations=True,  # Needed for tracking segments.
@@ -112,6 +126,29 @@ ts_mutes = msprime.sim_mutations(ts, rate=Mut_rate, random_seed=None)
 #write a fasta file
 ts_mutes.write_fasta(JOBname+".fa", reference_sequence=tskit.random_nucleotides(ts.sequence_length))
 
+### Pseudo code for editing file:
+#Create file handle for the fasta file that we wrote (open for reading)
+
+#Create file handle for a new file (open for 'appending')
+
+#Loop through and read each line of original file
+'''
+AA_handle = open(AA_filepath, "r")
+
+#Create an empty dictionary
+seq_dict = {}
+
+#Loop through the line in the file
+for line in AA_handle:
+    if line.startswith(">"):
+        #Use the replae method to replace (use your dictionary)
+        id_temp = line.strip() #Removes "\n"
+        id_clean = id_temp.replace(">", "") #Removes ">" by replacing with nothing.
+        
+        #Append the line to the new file 
+    else:
+        #Append the line to new file 
+'''
 
 #Commands for replacing seq ids
 replace_cmd0="sed -i '' 's/n0/Africa/' "+JOBname+".fa"
