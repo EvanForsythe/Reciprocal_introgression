@@ -148,13 +148,13 @@ for line in fasta_read_handle:
         id_clean = id_temp.replace(">", "") #Removes ">" by replacing with nothing.
         id_new = ''
         if id_clean == "n0":
-                id_new = "Africa"
+                id_new = "Pop1"
         elif id_clean == "n1":
-                id_new = "Eurasia"
+                id_new = "Pop2"
         elif id_clean == "n2":
-                id_new = "Neanderthal"
+                id_new = "Pop3"
         elif id_clean == "n3":
-                id_new = "Chimpanzee"
+                id_new = "Outgroup"
         else:
                 id_new = id_clean 
         fasta_write_handle.write(">" + id_new + "\n")
@@ -208,10 +208,10 @@ def get_migrating_tracts(ts, dest_pop):
     return np.array(migrating_tracts) 
 
 #Get the tracts from N -> E
-migrating_nead_to_euro = get_migrating_tracts(ts, "Neanderthal")
+migrating_nead_to_euro = get_migrating_tracts(ts, "Pop3")
 
 #Get the tracts from N -> E
-migrating_euro_to_nean = get_migrating_tracts(ts, "Eurasia")
+migrating_euro_to_nean = get_migrating_tracts(ts, "Pop2")
 
 #Get the overlap (reciprocal introgression)
 def find_overlap_intervals(arr1, arr2):
