@@ -19,6 +19,7 @@ import re
 import argparse
 import math
 import pandas as pd
+import shutil as sh
 
 #Set wd
 working_dir = sys.path[0]+'/' 
@@ -132,24 +133,39 @@ ts_mutes.write_fasta(JOBname+".fa", reference_sequence=tskit.random_nucleotides(
 #Create file handle for a new file (open for 'appending')
 
 #Loop through and read each line of original file
-'''
-AA_handle = open(AA_filepath, "r")
-
+fasta_read_filename = JOBname+".fa"
+fasta_write_filename = JOBname+".fa.tmp"
+fasta_read_handle = open(fasta_read_filename, "r")
+fasta_write_handle = open(fasta_write_filename, "a")
 #Create an empty dictionary
 seq_dict = {}
 
 #Loop through the line in the file
-for line in AA_handle:
+for line in fasta_read_handle:
     if line.startswith(">"):
         #Use the replae method to replace (use your dictionary)
         id_temp = line.strip() #Removes "\n"
         id_clean = id_temp.replace(">", "") #Removes ">" by replacing with nothing.
-        
-        #Append the line to the new file 
+        id_new = ''
+        if id_clean == "n0":
+                id_new = "Pop1"
+        elif id_clean == "n1":
+                id_new = "Pop2"
+        elif id_clean == "n2":
+                id_new = "Pop3"
+        elif id_clean == "n3":
+                id_new = "Outgroup"
+        else:
+                id_new = id_clean 
+        fasta_write_handle.write(">" + id_new + "\n")
     else:
-        #Append the line to new file 
-'''
+       fasta_write_handle.write(line)
 
+sh.move(fasta_write_filename, fasta_read_filename)
+
+
+
+'''
 #Commands for replacing seq ids
 replace_cmd0="sed -i '' 's/n0/Africa/' "+JOBname+".fa"
 replace_cmd1="sed -i '' 's/n1/Eurasia/' "+JOBname+".fa"
@@ -177,7 +193,7 @@ if re.search(JOBname, replace_cmd3): #Check if cmd contains expected string and 
     subprocess.call(replace_cmd3, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 else:
 	print(f"unable to run the following find/replace command: {replace_cmd3}")
-
+'''
 
 ## Track the tracts that underwent migration
 
@@ -192,10 +208,10 @@ def get_migrating_tracts(ts, dest_pop):
     return np.array(migrating_tracts) 
 
 #Get the tracts from N -> E
-migrating_nead_to_euro = get_migrating_tracts(ts, "Neanderthal")
+migrating_nead_to_euro = get_migrating_tracts(ts, "Pop3")
 
 #Get the tracts from N -> E
-migrating_euro_to_nean = get_migrating_tracts(ts, "Eurasia")
+migrating_euro_to_nean = get_migrating_tracts(ts, "Pop2")
 
 #Get the overlap (reciprocal introgression)
 def find_overlap_intervals(arr1, arr2):
