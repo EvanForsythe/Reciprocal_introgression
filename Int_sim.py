@@ -207,11 +207,11 @@ def get_migrating_tracts(ts, dest_pop):
             migrating_tracts.append((migration.left, migration.right))
     return np.array(migrating_tracts) 
 
-#Get the tracts from N -> E
-migrating_nead_to_euro = get_migrating_tracts(ts, "Pop3")
+#Get the tracts from Pop3 -> Pop2
+migrating_pop3_to_pop2 = get_migrating_tracts(ts, "Pop3")
 
-#Get the tracts from N -> E
-migrating_euro_to_nean = get_migrating_tracts(ts, "Pop2")
+#Get the tracts from Pop2 -> Pop3
+migrating_pop2_to_pop3 = get_migrating_tracts(ts, "Pop2")
 
 #Get the overlap (reciprocal introgression)
 def find_overlap_intervals(arr1, arr2):
@@ -228,7 +228,7 @@ def find_overlap_intervals(arr1, arr2):
     
     return np.array(overlap_intervals)
 
-recip_introgression = find_overlap_intervals(migrating_nead_to_euro, migrating_euro_to_nean)
+recip_introgression = find_overlap_intervals(migrating_pop3_to_pop2, migrating_pop2_to_pop3)
 
 
 #Create a plot of introgression tracts
@@ -241,13 +241,13 @@ third_quart = math.floor(Seq_len*0.75)
 
 fig = plt.figure(figsize=(10.0,5.0))
 
-### plot the introgressed tracts N -> E
+### plot the introgressed tracts pop3 -> pop2
 plt.hlines(
-    [1] * len(migrating_nead_to_euro), migrating_nead_to_euro[:,0], migrating_nead_to_euro[:,1], color="C0", lw=10, label="N -> E introgression")
+    [1] * len(migrating_pop3_to_pop2), migrating_pop3_to_pop2[:,0], migrating_pop3_to_pop2[:,1], color="C0", lw=10, label="pop3 -> pop2 introgression")
 
 ### plot the introgressed tracts E -> N
 plt.hlines(
-    [2] * len(migrating_euro_to_nean), migrating_euro_to_nean[:,0], migrating_euro_to_nean[:,1], color="C1", lw=10, label="E -> N introgression")
+    [2] * len(migrating_pop2_to_pop3), migrating_pop2_to_pop3[:,0], migrating_pop2_to_pop3[:,1], color="C1", lw=10, label="pop2 -> pop3 introgression")
 
 
 ### plot the introgressed tracts E -> N
@@ -275,11 +275,11 @@ col2 = "Start Site"
 col3 = "Stop Site"
 df = pd.DataFrame(columns = [col1,col2,col3])
 
-for migration in migrating_nead_to_euro:
-	 df.loc[len(df)] = {col1: "N to E", col2: migration[0], col3: migration[1]}
+for migration in migrating_pop3_to_pop2:
+	 df.loc[len(df)] = {col1: "pop3 to pop2", col2: migration[0], col3: migration[1]}
 
-for migration in migrating_euro_to_nean:
-	df.loc[len(df)] = {col1: "E to N", col2: migration[0], col3: migration[1]}
+for migration in migrating_pop2_to_pop3:
+	df.loc[len(df)] = {col1: "pop2 to pop3", col2: migration[0], col3: migration[1]}
 
 for migration in recip_introgression:
 	df.loc[len(df)] = {col1: "Recip", col2: migration[0], col3: migration[1]}
