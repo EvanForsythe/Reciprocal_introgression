@@ -230,7 +230,7 @@ def find_overlap_intervals(arr1, arr2):
 
 recip_introgression = find_overlap_intervals(migrating_pop3_to_pop2, migrating_pop2_to_pop3)
 
-
+'''
 #Create a plot of introgression tracts
 #Locations of vert lines
 first_quart = math.floor(Seq_len*0.25)
@@ -245,12 +245,12 @@ fig = plt.figure(figsize=(10.0,5.0))
 plt.hlines(
     [1] * len(migrating_pop3_to_pop2), migrating_pop3_to_pop2[:,0], migrating_pop3_to_pop2[:,1], color="C0", lw=10, label="pop3 -> pop2 introgression")
 
-### plot the introgressed tracts E -> N
+### plot the introgressed tracts pop2 -> pop3
 plt.hlines(
     [2] * len(migrating_pop2_to_pop3), migrating_pop2_to_pop3[:,0], migrating_pop2_to_pop3[:,1], color="C1", lw=10, label="pop2 -> pop3 introgression")
 
 
-### plot the introgressed tracts E -> N
+### plot the introgressed tracts recip
 plt.hlines(
     [3] * len(recip_introgression), recip_introgression[:,0], recip_introgression[:,1], color="C2", lw=10, label="Reciprocal introgression")
 
@@ -259,16 +259,16 @@ plt.axvline(x=halfway, color='b', linestyle='-')
 plt.axvline(x=third_quart, color='b', linestyle='-')
 
 
-#Format plot
+Format plot
 plt.title(f"Introgressed tracks")
 plt.xlabel("Genomic position")
 plt.ylim(0, 4)
 plt.yticks([])
 plt.legend()
-#plt.show()
+plt.show()
 
 fig.savefig(JOBname+".pdf")
-
+'''
 #Output to CSV
 col1 = "Introgression Type"
 col2 = "Start Site"
