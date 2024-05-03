@@ -130,6 +130,9 @@ migrating_pop2_to_pop3 = filtered_df[['Start Site', 'Stop Site']].to_numpy()
 filtered_df = sim_df[sim_df['Introgression Type'] == 'Recip']
 recip_introgression = filtered_df[['Start Site', 'Stop Site']].to_numpy()
 
+print(no_introgression_df)
+no_introgression = no_introgression_df[['Window_Start_Site', 'Window_Stop_Site']].to_numpy()
+
 
 win_df['Average_Site'] = (win_df['Window_Start_Site'] + win_df['Window_Stop_Site']) / 2
 
@@ -156,6 +159,10 @@ plt.hlines(
 ### plot the recip introgressed tracts
 plt.hlines(
     [4] * len(recip_introgression), recip_introgression[:,0], recip_introgression[:,1], color="C2", lw=10, label="Reciprocal introgression")
+    
+### plot the no introgression tracts
+plt.hlines(
+    [1] * len(no_introgression), no_introgression[:,0], no_introgression[:,1], color = "C3", lw=10, label =" No Introgression" )
 
 #plt.axvline(x=first_quart, color='b', linestyle='-')
 #plt.axvline(x=halfway, color='b', linestyle='-')
