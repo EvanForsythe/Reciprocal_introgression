@@ -29,10 +29,11 @@ win_df = pd.read_csv(win_file)
 print(win_df)
 
 Davglist = []
+Intwindows = []
 
 #Loop through rows in dataframe
 for ind, row in sim_df.iterrows():
-
+    #Get the start and stop site
 	temp_block_start = sim_df['Start Site'][ind]
 	temp_block_stop = sim_df['Stop Site'][ind]
 
@@ -51,9 +52,10 @@ for ind, row in sim_df.iterrows():
 
 	#print(temp_block_start)
 	#print(temp_block_stop)
-
+    
+    #Get all windows falling within blocks
 	filteredtemp = win_df[(win_df['Window_Start_Site'] >= temp_block_start) & (win_df['Window_Stop_Site'] <= temp_block_stop)]
-	
+	#Get Dstat values for windows within the block
 	Dstatslist = filteredtemp[['D-Statistic']].to_numpy()
 	
 	#Dstatslist = []
@@ -69,15 +71,49 @@ for ind, row in sim_df.iterrows():
 	#print(end_index)
 	#print(Daverage)
 	#print(Dstatslist)
-	if not len(Dstatslist):
-		Daverage = 0
-	else:
-		Daverage = np.mean(Dstatslist)
-
-	Davglist.append(Daverage)
-sim_df['Average_Dstat_for_windows_in_tract'] = Davglist
 	
+	#Check if there are items in the list and take average if so
+	if len(Dstatslist) < 1:
+	    Daverage = 0
+	else:
+	    Daverage = np.mean(Dstatslist)
+    
+    #Add D average values to list
+	Davglist.append(Daverage)
+	
+	
+	for i in list(filteredtemp['Window_Number']):
+	    if i not in Intwindows:
+	        Intwindows.append(i)
+	
+	#Add Int windows to list
+
+print(Intwindows)
+
+NoIntWindows=[]
+
+for i in list(win_df['Window_Number']):
+    if i not in Intwindows:
+        NoIntWindows.append(i)
+
+print(NoIntWindows)
+
+
+
+	
+#Add the Dstat averages for the windows in each tract
+sim_df['Average_Dstat_for_windows_in_tract'] = Davglist
+
+#Sort the whole Data Frame by Start Site 	
 sim_df = sim_df.sort_values(by = 'Start Site')
+
+#Added 'No Introgression Tract'
+threshold = 0.1 #threshold for no significant introgression
+no_introgression_df = win_df[(win_df['D-Statistic'].abs() < threshold)]
+average_d_stat_no_introgression = no_introgression_df['D-Statistic'].mean()
+new_row = pd.DataFrame({'Introgression Type': ['No Introgression'], 'Average_Dstat_for_windows_in_tract': [average_d_stat_no_introgression]})
+sim_df = pd.concat([sim_df, new_row], ignore_index = True)
+print(sim_df.tail())
 
 output_file = os.path.splitext(sim_file)[0] + '_figsandstats.csv'
 
@@ -85,14 +121,18 @@ output_file = os.path.splitext(sim_file)[0] + '_figsandstats.csv'
 sim_df.to_csv(output_file, index=False)
 
 
-filtered_df = sim_df[sim_df['Introgression Type'] == 'N to E']
-migrating_nead_to_euro = filtered_df[['Start Site', 'Stop Site']].to_numpy()
+filtered_df = sim_df[sim_df['Introgression Type'] == 'pop3 to pop2']
+migrating_pop3_to_pop2 = filtered_df[['Start Site', 'Stop Site']].to_numpy()
 
-filtered_df = sim_df[sim_df['Introgression Type'] == 'E to N']
-migrating_euro_to_nean = filtered_df[['Start Site', 'Stop Site']].to_numpy()
+filtered_df = sim_df[sim_df['Introgression Type'] == 'pop2 to pop3']
+migrating_pop2_to_pop3 = filtered_df[['Start Site', 'Stop Site']].to_numpy()
 
 filtered_df = sim_df[sim_df['Introgression Type'] == 'Recip']
 recip_introgression = filtered_df[['Start Site', 'Stop Site']].to_numpy()
+
+print(no_introgression_df)
+no_introgression = no_introgression_df[['Window_Start_Site', 'Window_Stop_Site']].to_numpy()
+
 
 win_df['Average_Site'] = (win_df['Window_Start_Site'] + win_df['Window_Stop_Site']) / 2
 
@@ -107,18 +147,22 @@ fig = plt.figure(figsize=(10.0,5.0))
 
 plt.ylim(-1,6)
 
-### plot the introgressed tracts N -> E
+### plot the introgressed tracts pop3 -> pop2
 plt.hlines(
-    [2] * len(migrating_nead_to_euro), migrating_nead_to_euro[:,0], migrating_nead_to_euro[:,1], color="C0", lw=10, label="N -> E introgression")
+    [2] * len(migrating_pop3_to_pop2), migrating_pop3_to_pop2[:,0], migrating_pop3_to_pop2[:,1], color="C0", lw=10, label="pop3 -> pop2 introgression")
 
-### plot the introgressed tracts E -> N
+### plot the introgressed tracts pop2 -> pop3
 plt.hlines(
-    [3] * len(migrating_euro_to_nean), migrating_euro_to_nean[:,0], migrating_euro_to_nean[:,1], color="C1", lw=10, label="E -> N introgression")
+    [3] * len(migrating_pop2_to_pop3), migrating_pop2_to_pop3[:,0], migrating_pop2_to_pop3[:,1], color="C1", lw=10, label="pop2 -> pop3 introgression")
 
 
 ### plot the recip introgressed tracts
 plt.hlines(
     [4] * len(recip_introgression), recip_introgression[:,0], recip_introgression[:,1], color="C2", lw=10, label="Reciprocal introgression")
+    
+### plot the no introgression tracts
+plt.hlines(
+    [1] * len(no_introgression), no_introgression[:,0], no_introgression[:,1], color = "C3", lw=10, label =" No Introgression" )
 
 #plt.axvline(x=first_quart, color='b', linestyle='-')
 #plt.axvline(x=halfway, color='b', linestyle='-')
