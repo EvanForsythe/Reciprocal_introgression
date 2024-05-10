@@ -40,7 +40,7 @@ col3 = 'Window_Stop_Site'
 col4 = 'Number_of_ABBA_Sites'
 col5 = 'Number_of_BABA_Sites'
 col6 = 'Number_of_AABB_Sites'
-col7 = 'D-Statistic'
+col7 = 'D_Statistic'
 df = pd.DataFrame(columns = [col1,col2,col3,col4,col5,col6,col7])
 
 r1 = re.compile(P1)
