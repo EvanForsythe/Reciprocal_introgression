@@ -270,9 +270,9 @@ plt.show()
 fig.savefig(JOBname+".pdf")
 '''
 #Output to CSV
-col1 = "Introgression Type"
-col2 = "Start Site"
-col3 = "Stop Site"
+col1 = "Introgression_Type"
+col2 = "Start_Site"
+col3 = "Stop_Site"
 df = pd.DataFrame(columns = [col1,col2,col3])
 
 for migration in migrating_pop3_to_pop2:
