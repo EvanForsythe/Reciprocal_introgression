@@ -16,10 +16,12 @@ parser = argparse.ArgumentParser(description= "Figs and Stats")
 
 parser.add_argument('-s', '--sim_file', type = str, required = True, help = 'Full path to the Int_sim output csv')
 parser.add_argument('-w', '--win_file', type = str, required = True, help = 'Full path to the Sliding_window  output csv')
+parser.add_argument('-t', '--threshold', type = float, required = False, help = 'Threshold for significant introgression', default = 0.1)
 
 args = parser.parse_args()
 sim_file = args.sim_file
 win_file = args.win_file
+threshold = args.threshold #threshold for no significant introgression
 
 
 #Read in CSV files as dataframe
@@ -131,7 +133,7 @@ print(sim_df)
 
 
 #Added 'No Introgression Tract'
-threshold = 0.1 #threshold for no significant introgression
+
 no_introgression_df = win_df[(win_df['D_Statistic'].abs() < threshold)]
 average_d_stat_no_introgression = no_introgression_df['D_Statistic'].mean()
 
@@ -258,7 +260,7 @@ plt.savefig(violin_file)
 ##########################
 
 # Create a file handle for a csv file (create in append mode, so that each 'run' of script create a new line in the file)
-stats_handle = open(os.path.splitext(sim_file)[0] + 'runstats.csv', 'a')
+stats_handle = open(os.path.splitext(sim_file)[0] + '_runstats.csv', 'a')
 # Calculate summary stats by doing the following
 
 #print(sim_df.loc[sim_df[‘Introgression_Type’] == ‘No_Int’][“Average_Dstat_for_windows_in_tract”])
@@ -272,7 +274,7 @@ avg_recip=np.average(list(sim_df.loc[sim_df['Introgression_Type'] == 'Recip']['A
 
 
 
-stats_handle.write(','.join([os.path.splitext(sim_file)[0], str(avg_noint), str(avg_32), str(avg_23), str(avg_recip)]))
+stats_handle.write(','.join([os.path.splitext(sim_file)[0], str(avg_noint), str(avg_32), str(avg_23), str(avg_recip), str(threshold)]))
 
 
 
