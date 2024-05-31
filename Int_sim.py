@@ -32,11 +32,18 @@ parser = argparse.ArgumentParser(description='Script for simulating introgressio
 
 #Add arguments
 parser.add_argument('-j', '--JOBname', type=str, metavar='', required=True, help='Unique job name for this run of this script. Avoid including spaces or special characters ("_" is ok)') 
-parser.add_argument('-s', '--Seq_len', type=int, metavar='', required=True, help='Specify an interger to set length of total simulateed alignment (e.g. 20000000') 
-parser.add_argument('-p', '--Prop_int', type=float, metavar='', required=True, help='Specify the proportion of genome to be introgressed with each introgression event (e.g. 0.2)')
-parser.add_argument('-m', '--Mut_rate', type=float, metavar='', required=True, help='Specify the mutation rate (e.g. 0.0000001)')
-parser.add_argument('-r', '--Recomb_rate', type=float, metavar='', required=True, help='Specify the recomb rate (e.g. 0.00000001)')
-parser.add_argument('-n', '--Ne', type=int, metavar='', required=True, help='Specify the effective pop size (Ne) (e.g. 10000)')
+parser.add_argument('-s', '--Seq_len', type=int, metavar='', required=False, default=20000000, help='Specify an interger to set length of total simulateed alignment (default = 20000000')
+parser.add_argument('-p', '--Prop_int', type=float, metavar='', required=True, help='Specify the proportion of genome to be introgressed with each introgression event (default = 0.2)') # Add default
+parser.add_argument('-m', '--Mut_rate', type=float, metavar='', required=True, help='Specify the mutation rate (default = 0.0000001)') # Add default
+parser.add_argument('-r', '--Recomb_rate', type=float, metavar='', required=True, help='Specify the recomb rate (default = 0.00000001)') # Add default
+parser.add_argument('-n', '--Ne', type=int, metavar='', required=True, help='Specify the effective pop size (Ne) (defaul = 10000)') # Add default
+
+#Time arguments
+parser.add_argument('-1', '--t_int', type=int, metavar='', required=False, default=40000 , help='Time of introgression (years ago) (default = 40000)') # Add default
+parser.add_argument('-2', '--t_sp12', type=int, metavar='', required=False,default=80000 , help='Time of first most recent speciation (years ago) (default = 80000)') # Add default
+parser.add_argument('-3', '--t_sp123', type=int, metavar='', required=False,default=120000 , help='Time of second most recent speciation (default = 120000)') # Add default
+parser.add_argument('-4', '--t_sp1234', type=int, metavar='', required=False, default=200000 , help='Time of third  most recent speciation (default = 200000)') # Add default
+
 
 
 #Define the parser
@@ -47,17 +54,12 @@ Seq_len=args.Seq_len
 Prop_int=args.Prop_int
 Mut_rate=args.Mut_rate
 Recomb_rate=args.Recomb_rate
-Ne=args.Ne
+t_int=args.t_int
+t_sp12=args.t_sp12
+t_sp123=args.t_sp123
+t_sp1234=args.t_sp1234
 
-'''
-#Arguments for testing
-JOBname="reconfig"
-Seq_len=2000000
-Prop_int=0.2
-Mut_rate=0.0000001
-Recomb_rate=0.00000001
-Ne=10000
-'''
+
 #Pop1=Africa
 #Pop2=Eurasia
 #POp3=Neanderthal
@@ -66,14 +68,10 @@ Ne=10000
 #Get list of taxa
 taxa_names=["Pop1", "Pop2", "Pop3", "Outgroup"]
 
-#set up a highly simplified demographic history of human+Neanderthal demography and simulate a single chromosome of 20Mb in length
-
-#Assign sequence length
-#REMOVE####sequence_length=Seq_len
-
+#set up a demographic history 
 
 #Setup the simulations
-time_units = 1000 / 25  # Conversion factor for kya to generations
+#time_units = 1000 / 25  # Conversion factor for kya to generations
 demography = msprime.Demography()
 
 
@@ -83,26 +81,31 @@ for t_name in taxa_names:
     print(f'Adding population: {t_name}')
 
 
+#t_int=40000
+#t_sp12=80000
+#t_sp123=120000
+#t_sp1234=200000
+
 # introgression 50 kya
 demography.add_mass_migration(
-    time=1000 * time_units, source="Pop2", dest="Pop3", proportion=Prop_int)
+    time=t_int, source="Pop2", dest="Pop3", proportion=Prop_int)
 
 #opposite direction introgression
 # introgression 50 kya
 demography.add_mass_migration(
-    time=1000 * time_units, source="Pop3", dest="Pop2", proportion=Prop_int)
+    time=t_int, source="Pop3", dest="Pop2", proportion=Prop_int)
 
 # Speciation event
 demography.add_mass_migration(
-    time=2000 * time_units, source="Pop2", dest="Pop1", proportion=1)
+    time=t_sp12, source="Pop2", dest="Pop1", proportion=1)
 
 # Speciation event
 demography.add_mass_migration(
-    time=3000 * time_units, source="Pop3", dest="Pop1", proportion=1)
+    time=t_sp123, source="Pop3", dest="Pop1", proportion=1)
 
 # Speciation event
 demography.add_mass_migration(
-    time=5000 * time_units, source="Pop1", dest="Outgroup", proportion=1)
+    time=t_sp1234, source="Pop1", dest="Outgroup", proportion=1)
 
 
 
@@ -164,37 +167,6 @@ for line in fasta_read_handle:
 sh.move(fasta_write_filename, fasta_read_filename)
 
 
-
-'''
-#Commands for replacing seq ids
-replace_cmd0="sed -i '' 's/n0/Africa/' "+JOBname+".fa"
-replace_cmd1="sed -i '' 's/n1/Eurasia/' "+JOBname+".fa"
-replace_cmd2="sed -i '' 's/n2/Neanderthal/' "+JOBname+".fa"
-replace_cmd3="sed -i '' 's/n3/Chimpanzee/' "+JOBname+".fa"
-
-#Edit the fasta file
-#Run all the commands (if it contains strings expected in the command, this is a precautin of using shell=True)
-if re.search(JOBname, replace_cmd0): #Check if cmd contains expected string and run if so
-    subprocess.call(replace_cmd0, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-else:
-	print(f"unable to run the following find/replace command: {replace_cmd0}")
-
-if re.search(JOBname, replace_cmd1): #Check if cmd contains expected string and run if so
-    subprocess.call(replace_cmd1, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-else:
-	print(f"unable to run the following find/replace command: {replace_cmd1}")
-
-if re.search(JOBname, replace_cmd2): #Check if cmd contains expected string and run if so
-    subprocess.call(replace_cmd2, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-else:
-	print(f"unable to run the following find/replace command: {replace_cmd2}")
-
-if re.search(JOBname, replace_cmd3): #Check if cmd contains expected string and run if so
-    subprocess.call(replace_cmd3, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-else:
-	print(f"unable to run the following find/replace command: {replace_cmd3}")
-'''
-
 ## Track the tracts that underwent migration
 
 def get_migrating_tracts(ts, dest_pop):
@@ -230,45 +202,7 @@ def find_overlap_intervals(arr1, arr2):
 
 recip_introgression = find_overlap_intervals(migrating_pop3_to_pop2, migrating_pop2_to_pop3)
 
-'''
-#Create a plot of introgression tracts
-#Locations of vert lines
-first_quart = math.floor(Seq_len*0.25)
-halfway = math.floor(Seq_len*0.5)
-third_quart = math.floor(Seq_len*0.75)
 
-
-
-fig = plt.figure(figsize=(10.0,5.0))
-
-### plot the introgressed tracts pop3 -> pop2
-plt.hlines(
-    [1] * len(migrating_pop3_to_pop2), migrating_pop3_to_pop2[:,0], migrating_pop3_to_pop2[:,1], color="C0", lw=10, label="pop3 -> pop2 introgression")
-
-### plot the introgressed tracts pop2 -> pop3
-plt.hlines(
-    [2] * len(migrating_pop2_to_pop3), migrating_pop2_to_pop3[:,0], migrating_pop2_to_pop3[:,1], color="C1", lw=10, label="pop2 -> pop3 introgression")
-
-
-### plot the introgressed tracts recip
-plt.hlines(
-    [3] * len(recip_introgression), recip_introgression[:,0], recip_introgression[:,1], color="C2", lw=10, label="Reciprocal introgression")
-
-plt.axvline(x=first_quart, color='b', linestyle='-')
-plt.axvline(x=halfway, color='b', linestyle='-')
-plt.axvline(x=third_quart, color='b', linestyle='-')
-
-
-Format plot
-plt.title(f"Introgressed tracks")
-plt.xlabel("Genomic position")
-plt.ylim(0, 4)
-plt.yticks([])
-plt.legend()
-plt.show()
-
-fig.savefig(JOBname+".pdf")
-'''
 #Output to CSV
 col1 = "Introgression_Type"
 col2 = "Start_Site"
