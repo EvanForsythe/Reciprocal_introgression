@@ -54,10 +54,12 @@ Seq_len=args.Seq_len
 Prop_int=args.Prop_int
 Mut_rate=args.Mut_rate
 Recomb_rate=args.Recomb_rate
+Ne=args.Ne
 t_int=args.t_int
 t_sp12=args.t_sp12
 t_sp123=args.t_sp123
 t_sp1234=args.t_sp1234
+
 
 
 #Pop1=Africa
@@ -171,19 +173,25 @@ sh.move(fasta_write_filename, fasta_read_filename)
 
 def get_migrating_tracts(ts, dest_pop):
     dest_id = [p.id for p in ts.populations() if p.metadata['name']==dest_pop][0]
+    #print(dest_id)
+    #print(dest_pop)
     migrating_tracts = []
-    # Get all tracts that migrated into the neanderthal population
+    # Get all tracts that migrated into the destination population
     for migration in ts.migrations():
         #print(migration.dest)
         if migration.dest == dest_id:
-            migrating_tracts.append((migration.left, migration.right))
+            migrating_tracts.append((int(migration.left), int(migration.right)))
+            #print(migrating_tracts)
     return np.array(migrating_tracts) 
 
 #Get the tracts from Pop3 -> Pop2
 migrating_pop3_to_pop2 = get_migrating_tracts(ts, "Pop3")
+#print(migrating_pop3_to_pop2)
 
+#print("hello")
 #Get the tracts from Pop2 -> Pop3
 migrating_pop2_to_pop3 = get_migrating_tracts(ts, "Pop2")
+#print(migrating_pop2_to_pop3)
 
 #Get the overlap (reciprocal introgression)
 def find_overlap_intervals(arr1, arr2):
@@ -198,10 +206,16 @@ def find_overlap_intervals(arr1, arr2):
                 overlap_stop = min(interval1[1], interval2[1])
                 overlap_intervals.append([overlap_start, overlap_stop])
     
-    return np.array(overlap_intervals)
+    #create dataframe
+    overlap_intervals_df = pd.DataFrame(overlap_intervals)
+    
+    #remove any duplicate rows from the dataframe
+    overlap_intervals_df_nodup = overlap_intervals_df.drop_duplicates()
+
+    #return the array
+    return np.array(overlap_intervals_df_nodup)
 
 recip_introgression = find_overlap_intervals(migrating_pop3_to_pop2, migrating_pop2_to_pop3)
-
 
 #Output to CSV
 col1 = "Introgression_Type"
