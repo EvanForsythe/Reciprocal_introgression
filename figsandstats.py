@@ -12,46 +12,65 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+
+#Create a parser
 parser = argparse.ArgumentParser(description= "Figs and Stats")
 
+#Add to the parser
 parser.add_argument('-s', '--sim_file', type = str, required = True, help = 'Full path to the Int_sim output csv')
 parser.add_argument('-w', '--win_file', type = str, required = True, help = 'Full path to the Sliding_window  output csv')
-parser.add_argument('-t', '--threshold', type = float, required = False, help = 'Threshold for significant introgression', default = 0.1)
 
+#Get the arguments from the parser and store as variables
 args = parser.parse_args()
 sim_file = args.sim_file
 win_file = args.win_file
-threshold = args.threshold #threshold for no significant introgression
 
 
 #Read in CSV files as dataframe
 sim_df = pd.read_csv(sim_file)
-print(sim_df)
 win_df = pd.read_csv(win_file)
-print(win_df)
 
+# Create blank lists
 Davglist = []
 Intwindows = []
 
 
+## Add "no int" tracts to the sim df
 
 #Sort the whole Data Frame by Start Site 	
 sim_df = sim_df.sort_values(by = 'Start_Site')
 
+#Create a counter
 current_site = 0
 
+#Loop through the rows of the sim dataframe
 for index, row in sim_df.iterrows():
+	#ask if the tract start site is greater than the counter
     if row['Start_Site'] > current_site:
+    	# create a new dataframe with one row
         new_row = pd.DataFrame({'Introgression_Type': ['No_Int'], 'Start_Site': [current_site], 'Stop_Site': [row['Start_Site'] -1]})
+                
+        # Concatenate  the new row onto the sim dataframe
         sim_df = pd.concat([sim_df, new_row], ignore_index = True)
-    current_site = row['Stop_Site'] + 1
+
     
+    #Advance the counter so that it is one greater than stop site
+    current_site = row['Stop_Site'] + 1
+
+#Get the last row of the df
 last_row = win_df.iloc[-1]
+
+#Add a "no int" tract to the very end 
 if last_row['Window_Stop_Site'] > current_site:
+		
         new_row = pd.DataFrame({'Introgression_Type': ['No_Int'], 'Start_Site': [current_site], 'Stop_Site': [last_row['Window_Stop_Site']]})
         sim_df = pd.concat([sim_df, new_row], ignore_index = True)
 
+##Sort again to make sure the df is ordered
 sim_df = sim_df.sort_values(by = 'Start_Site')
+
+
+### ASK WHETHER SIMDF HAS MORE ROWS THAN WINDOWS DF??
 
 
 #Loop through rows in dataframe
@@ -78,8 +97,12 @@ for ind, row in sim_df.iterrows():
     
     #Get all windows falling within blocks
 	filteredtemp = win_df[(win_df['Window_Start_Site'] >= temp_block_start) & (win_df['Window_Stop_Site'] <= temp_block_stop)]
+	
+	#print(filteredtemp)
+	
 	#Get Dstat values for windows within the block
 	Dstatslist = filteredtemp[['D_Statistic']].to_numpy()
+
 	
 	#Dstatslist = []
 	#for x in range(start_index,(end_index + 1)):
@@ -109,9 +132,9 @@ for ind, row in sim_df.iterrows():
 	    if i not in Intwindows:
 	        Intwindows.append(i)
 	
-	#Add Int windows to list
-print("Intwindows:")
-print(Intwindows)
+#Add Int windows to list
+#print("Intwindows:")
+#print(Intwindows)
 
 NoIntWindows=[]
 
@@ -119,25 +142,24 @@ for i in list(win_df['Window_Number']):
     if i not in Intwindows:
         NoIntWindows.append(i)
 
-print("NoIntWindows:")
-print(NoIntWindows)
+#print("NoIntWindows:")
+#print(NoIntWindows)
 
 
-
-	
 #Add the Dstat averages for the windows in each tract
 sim_df['Average_Dstat_for_windows_in_tract'] = Davglist
-print("THIS IS THE SIM_DF:")
-print(sim_df)
+#print("THIS IS THE SIM_DF:")
+#print(sim_df)
+
 
 
 
 #Added 'No Introgression Tract'
 
-no_introgression_df = win_df[(win_df['D_Statistic'].abs() < threshold)]
-average_d_stat_no_introgression = no_introgression_df['D_Statistic'].mean()
+#no_introgression_df = win_df[(win_df['D_Statistic'].abs() < threshold)]
+#average_d_stat_no_introgression = no_introgression_df['D_Statistic'].mean()
 
-print(sim_df.tail())
+#print(sim_df.tail())
 
 output_file = os.path.splitext(sim_file)[0] + '_figsandstats.csv'
 
@@ -145,27 +167,32 @@ output_file = os.path.splitext(sim_file)[0] + '_figsandstats.csv'
 sim_df.to_csv(output_file, index=False)
 
 
-filtered_df = sim_df[sim_df['Introgression_Type'] == 'pop3 to pop2']
-migrating_pop3_to_pop2 = filtered_df[['Start_Site', 'Stop_Site']].to_numpy()
-
-filtered_df = sim_df[sim_df['Introgression_Type'] == 'pop2 to pop3']
-migrating_pop2_to_pop3 = filtered_df[['Start_Site', 'Stop_Site']].to_numpy()
-
-filtered_df = sim_df[sim_df['Introgression_Type'] == 'Recip']
-recip_introgression = filtered_df[['Start_Site', 'Stop_Site']].to_numpy()
-
-print(no_introgression_df)
-no_introgression = no_introgression_df[['Window_Start_Site', 'Window_Stop_Site']].to_numpy()
+#Get the start and stop sites of each type
+migrating_pop3_to_pop2 = sim_df[sim_df['Introgression_Type'] == 'pop3 to pop2'][['Start_Site', 'Stop_Site']].to_numpy()
+migrating_pop2_to_pop3 = sim_df[sim_df['Introgression_Type'] == 'pop2 to pop3'][['Start_Site', 'Stop_Site']].to_numpy()
+recip_introgression = sim_df[sim_df['Introgression_Type'] == 'Recip'][['Start_Site', 'Stop_Site']].to_numpy()
+no_introgression = sim_df[sim_df['Introgression_Type'] == 'No_int'][['Start_Site', 'Stop_Site']].to_numpy()
 
 
+#filtered_df = sim_df[sim_df['Introgression_Type'] == 'pop3 to pop2']
+#migrating_pop3_to_pop2 = filtered_df[['Start_Site', 'Stop_Site']].to_numpy()
+
+#filtered_df = sim_df[sim_df['Introgression_Type'] == 'pop2 to pop3']
+#migrating_pop2_to_pop3 = filtered_df[['Start_Site', 'Stop_Site']].to_numpy()
+
+#filtered_df = sim_df[sim_df['Introgression_Type'] == 'Recip']
+#recip_introgression = filtered_df[['Start_Site', 'Stop_Site']].to_numpy()
+
+#print(no_introgression_df)
+#no_introgression = no_introgression_df[['Window_Start_Site', 'Window_Stop_Site']].to_numpy()
+
+
+#Create a new column to store the middle point of a window
 win_df['Average_Site'] = (win_df['Window_Start_Site'] + win_df['Window_Stop_Site']) / 2
 
 
 #Create a plot of introgression tracts
 #Locations of vert lines
-
-
-
 
 fig = plt.figure(figsize=(10.0,5.0))
 
@@ -240,8 +267,8 @@ plt.rcdefaults()
 ### Violin Plot ###
 ###################
 # Print the df for testing
-print("THIS IS SIM_DF")
-print(sim_df)
+#print("THIS IS SIM_DF")
+#print(sim_df)
 
 #Generate the plot
 sns.violinplot(x = "Introgression_Type", y = "Average_Dstat_for_windows_in_tract", data = sim_df, split = False)
@@ -252,7 +279,6 @@ plt.ylim(-1,1)
 violin_file = os.path.splitext(sim_file)[0] + '_fviolin.pdf'
 #Sive the figure
 plt.savefig(violin_file)
-
 
 
 ##########################
@@ -272,10 +298,8 @@ avg_32=np.average(list(sim_df.loc[sim_df['Introgression_Type'] == 'pop3 to pop2'
 avg_23=np.average(list(sim_df.loc[sim_df['Introgression_Type'] == 'pop2 to pop3']['Average_Dstat_for_windows_in_tract']))
 avg_recip=np.average(list(sim_df.loc[sim_df['Introgression_Type'] == 'Recip']['Average_Dstat_for_windows_in_tract']))
 
-
-
-stats_handle.write(','.join([os.path.splitext(sim_file)[0], str(avg_noint), str(avg_32), str(avg_23), str(avg_recip), str(threshold)]))
-
+#Add a line to the file
+stats_handle.write(','.join([os.path.splitext(sim_file)[0], str(avg_noint), str(avg_32), str(avg_23), str(avg_recip)]))
 
 
 # Slice sim_df to get a df that only contains no_int values
