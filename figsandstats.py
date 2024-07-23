@@ -36,6 +36,10 @@ Intwindows = []
 
 
 ## Add "no int" tracts to the sim df
+num_rows_sim_df_before = len(sim_df)
+num_rows_win_df_before = len(win_df)
+print(f"simdf before: {num_rows_sim_df_before}")
+print(f"windf before: {num_rows_win_df_before}")
 
 #Sort the whole Data Frame by Start Site 	
 sim_df = sim_df.sort_values(by = 'Start_Site')
@@ -71,7 +75,11 @@ sim_df = sim_df.sort_values(by = 'Start_Site')
 
 
 ### ASK WHETHER SIMDF HAS MORE ROWS THAN WINDOWS DF??
+num_rows_sim_df = len(sim_df)
+num_rows_win_df = len(win_df)
 
+print(f"sim df: {num_rows_sim_df}")
+print(f"win_df: {num_rows_win_df}")
 
 #Loop through rows in dataframe
 for ind, row in sim_df.iterrows():
@@ -171,7 +179,7 @@ sim_df.to_csv(output_file, index=False)
 migrating_pop3_to_pop2 = sim_df[sim_df['Introgression_Type'] == 'pop3 to pop2'][['Start_Site', 'Stop_Site']].to_numpy()
 migrating_pop2_to_pop3 = sim_df[sim_df['Introgression_Type'] == 'pop2 to pop3'][['Start_Site', 'Stop_Site']].to_numpy()
 recip_introgression = sim_df[sim_df['Introgression_Type'] == 'Recip'][['Start_Site', 'Stop_Site']].to_numpy()
-no_introgression = sim_df[sim_df['Introgression_Type'] == 'No_int'][['Start_Site', 'Stop_Site']].to_numpy()
+no_introgression = sim_df[sim_df['Introgression_Type'] == 'No_Int'][['Start_Site', 'Stop_Site']].to_numpy()
 
 
 #filtered_df = sim_df[sim_df['Introgression_Type'] == 'pop3 to pop2']
