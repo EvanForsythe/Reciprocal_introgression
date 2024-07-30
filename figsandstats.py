@@ -49,6 +49,9 @@ current_site = 0
 
 #Loop through the rows of the sim dataframe
 for index, row in sim_df.iterrows():
+    
+    #print current site for debugging
+    print(f"Current site: {current_site}, Start_Site: {row['Start_Site']}")
 	#ask if the tract start site is greater than the counter
     if row['Start_Site'] > current_site:
     	# create a new dataframe with one row
@@ -59,14 +62,15 @@ for index, row in sim_df.iterrows():
 
     
     #Advance the counter so that it is one greater than stop site
-    current_site = row['Stop_Site'] + 1
+    if row['Stop_Site'] > current_site:
+        current_site = row['Stop_Site'] + 1
+    
 
 #Get the last row of the df
 last_row = win_df.iloc[-1]
 
 #Add a "no int" tract to the very end 
 if last_row['Window_Stop_Site'] > current_site:
-		
         new_row = pd.DataFrame({'Introgression_Type': ['No_Int'], 'Start_Site': [current_site], 'Stop_Site': [last_row['Window_Stop_Site']]})
         sim_df = pd.concat([sim_df, new_row], ignore_index = True)
 
@@ -80,6 +84,10 @@ num_rows_win_df = len(win_df)
 
 print(f"sim df: {num_rows_sim_df}")
 print(f"win_df: {num_rows_win_df}")
+
+if num_rows_sim_df > num_rows_win_df:
+    print("ERROR: # of tracts exceeded # of windows, which could result in unexpected behavior. Revise parameters used in Int_sim.py and/or sliding_window.py. Stopping...")
+    sys.exit()
 
 #Loop through rows in dataframe
 for ind, row in sim_df.iterrows():
@@ -282,6 +290,8 @@ plt.rcdefaults()
 sns.violinplot(x = "Introgression_Type", y = "Average_Dstat_for_windows_in_tract", data = sim_df, split = False)
 # Set ylimits
 plt.ylim(-1,1)
+
+plt.axhline(y=0, color='r', linestyle = '--')
 
 #Create a file handle
 violin_file = os.path.splitext(sim_file)[0] + '_fviolin.pdf'

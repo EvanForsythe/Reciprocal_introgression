@@ -32,17 +32,17 @@ parser = argparse.ArgumentParser(description='Script for simulating introgressio
 
 #Add arguments
 parser.add_argument('-j', '--JOBname', type=str, metavar='', required=True, help='Unique job name for this run of this script. Avoid including spaces or special characters ("_" is ok)') 
-parser.add_argument('-s', '--Seq_len', type=int, metavar='', required=False, default=20000000, help='Specify an interger to set length of total simulateed alignment (default = 20000000')
-parser.add_argument('-p', '--Prop_int', type=float, metavar='', required=True, help='Specify the proportion of genome to be introgressed with each introgression event (default = 0.2)') # Add default
-parser.add_argument('-m', '--Mut_rate', type=float, metavar='', required=True, help='Specify the mutation rate (default = 0.0000001)') # Add default
-parser.add_argument('-r', '--Recomb_rate', type=float, metavar='', required=True, help='Specify the recomb rate (default = 0.00000001)') # Add default
-parser.add_argument('-n', '--Ne', type=int, metavar='', required=True, help='Specify the effective pop size (Ne) (defaul = 10000)') # Add default
+parser.add_argument('-s', '--Seq_len', type=int, metavar='', required=False, default=10000000, help='Specify an interger to set length of total simulateed alignment (default = 10000000')
+parser.add_argument('-p', '--Prop_int', type=float, metavar='', required=False, default=0.2, help='Specify the proportion of genome to be introgressed with each introgression event (default = 0.2)')
+parser.add_argument('-m', '--Mut_rate', type=float, metavar='', required=False, default=0.0000001, help='Specify the mutation rate (default = 0.0000001)')
+parser.add_argument('-r', '--Recomb_rate', type=float, metavar='', required=False,default=0.0000000001, help='Specify the recomb rate (default = 0.0000000001)')
+parser.add_argument('-n', '--Ne', type=int, metavar='', required=False, default=10000, help='Specify the effective pop size (Ne) (default = 10000)')
 
 #Time arguments
-parser.add_argument('-1', '--t_int', type=int, metavar='', required=False, default=40000 , help='Time of introgression (years ago) (default = 40000)') # Add default
-parser.add_argument('-2', '--t_sp12', type=int, metavar='', required=False,default=80000 , help='Time of first most recent speciation (years ago) (default = 80000)') # Add default
-parser.add_argument('-3', '--t_sp123', type=int, metavar='', required=False,default=120000 , help='Time of second most recent speciation (default = 120000)') # Add default
-parser.add_argument('-4', '--t_sp1234', type=int, metavar='', required=False, default=200000 , help='Time of third  most recent speciation (default = 200000)') # Add default
+parser.add_argument('-1', '--t_int', type=int, metavar='', required=False, default=40000 , help='Time of introgression (years ago) (default = 40000)')
+parser.add_argument('-2', '--t_sp12', type=int, metavar='', required=False,default=80000 , help='Time of first most recent speciation (years ago) (default = 80000)')
+parser.add_argument('-3', '--t_sp123', type=int, metavar='', required=False,default=120000 , help='Time of second most recent speciation (default = 120000)')
+parser.add_argument('-4', '--t_sp1234', type=int, metavar='', required=False, default=200000 , help='Time of third  most recent speciation (default = 200000)')
 
 
 
@@ -186,12 +186,12 @@ def get_migrating_tracts(ts, dest_pop):
 
 #Get the tracts from Pop3 -> Pop2
 migrating_pop3_to_pop2 = get_migrating_tracts(ts, "Pop3")
-#print(migrating_pop3_to_pop2)
+print(migrating_pop3_to_pop2)
 
 #print("hello")
 #Get the tracts from Pop2 -> Pop3
 migrating_pop2_to_pop3 = get_migrating_tracts(ts, "Pop2")
-#print(migrating_pop2_to_pop3)
+print(migrating_pop2_to_pop3)
 
 #Get the overlap (reciprocal introgression)
 def find_overlap_intervals(arr1, arr2):
