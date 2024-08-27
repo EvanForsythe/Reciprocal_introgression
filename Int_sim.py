@@ -217,6 +217,11 @@ def find_overlap_intervals(arr1, arr2):
 
 recip_introgression = find_overlap_intervals(migrating_pop3_to_pop2, migrating_pop2_to_pop3)
 
+#Check for the presence of all three introgression types
+
+if len(migrating_pop3_to_pop2) == 0 or len(migrating_pop2_to_pop3) == 0 or len(recip_introgression) == 0:
+    print("Error: Not all types of introgression (pop3 to pop2, pop2 to pop3, reciprocal) exist. Revise parameters.")
+    sys.exit()
 #Output to CSV
 col1 = "Introgression_Type"
 col2 = "Start_Site"
