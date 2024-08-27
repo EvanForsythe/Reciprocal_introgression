@@ -105,6 +105,15 @@ for j in range(n_windows):
     df.loc[j] = {col1 :j + 1, col2 :start + 1, col3 :stop, col4: ABBA, col5 :BABA,col6 :AABB, col7 :D}
 
 
+print("Column names:", df.columns)
+
+#print(df['D_Statistic'].mean())
+if df['Number_of_AABB_Sites'].median() < 10:
+    print("ERROR: Detected low # of variable sites in sequences. Revise parameters used in Int_sim.py and/or sliding_window.py. Stopping...")
+    sys.exit()
+
+
+
 output_file = os.path.splitext(seq_file)[0] + '_slidingwindow.csv'
 df.to_csv(output_file, index=False)
       

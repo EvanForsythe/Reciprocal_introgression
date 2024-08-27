@@ -38,8 +38,8 @@ Intwindows = []
 ## Add "no int" tracts to the sim df
 num_rows_sim_df_before = len(sim_df)
 num_rows_win_df_before = len(win_df)
-print(f"simdf before: {num_rows_sim_df_before}")
-print(f"windf before: {num_rows_win_df_before}")
+#print(f"simdf before: {num_rows_sim_df_before}")
+#print(f"windf before: {num_rows_win_df_before}")
 
 #Sort the whole Data Frame by Start Site 	
 sim_df = sim_df.sort_values(by = 'Start_Site')
@@ -51,7 +51,7 @@ current_site = 0
 for index, row in sim_df.iterrows():
     
     #print current site for debugging
-    print(f"Current site: {current_site}, Start_Site: {row['Start_Site']}")
+    #print(f"Current site: {current_site}, Start_Site: {row['Start_Site']}")
 	#ask if the tract start site is greater than the counter
     if row['Start_Site'] > current_site:
     	# create a new dataframe with one row
@@ -82,8 +82,8 @@ sim_df = sim_df.sort_values(by = 'Start_Site')
 num_rows_sim_df = len(sim_df)
 num_rows_win_df = len(win_df)
 
-print(f"sim df: {num_rows_sim_df}")
-print(f"win_df: {num_rows_win_df}")
+#print(f"sim df: {num_rows_sim_df}")
+#print(f"win_df: {num_rows_win_df}")
 
 if num_rows_sim_df > num_rows_win_df:
     print("ERROR: # of tracts exceeded # of windows, which could result in unexpected behavior. Revise parameters used in Int_sim.py and/or sliding_window.py. Stopping...")
