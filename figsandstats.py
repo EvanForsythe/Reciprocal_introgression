@@ -330,8 +330,8 @@ try:
 		with open(quant_log_file, "a") as f:
 			f.write("Job_name\tMedian_no_int\tMedian_2to3\tMedian_3to2\tMedian_recip\n")
 
-		with open (quant_log_file, "a") as f:
-			f.write(f"{job_name}\t{avg_noint}\t{avg_32}\t{avg_23}\t{avg_recip}\n")
+	with open (quant_log_file, "a") as f:
+		f.write(f"{job_name}\t{avg_noint}\t{avg_32}\t{avg_23}\t{avg_recip}\n")
 
 except Exception as e:
 	#Log NA values in case of failure
@@ -339,8 +339,8 @@ except Exception as e:
 		with open(quant_log_file, "a") as f:
 			f.write("Job_name\tMedian_no_int\tMedian_2to3\tMedian_3to2\tMedian_recip\n")
 
-		with open(quant_log_file, "a") as f:
-			f.write(f"{job_name}\tNA\tNA\tNA\tNA\n")
+	with open(quant_log_file, "a") as f:
+		f.write(f"{job_name}\tNA\tNA\tNA\tNA\n")
 
 		print(f"Error occurred: {e}")
 		sys.exit(1)
