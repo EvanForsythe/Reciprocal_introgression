@@ -15,17 +15,17 @@ print('Arguments: ', str(sys.argv))
 #Create an argument parser object
 parser = argparse.ArgumentParser(description= "Sliding window analysis")
 #add arguments
-parser.add_argument('seq_file', help = 'Sequence file name')
-parser.add_argument('-w', '--win_len', type = int, required = True, help = 'Window length')
-parser.add_argument('-o', '--outgroup', type = str, required = True, help = 'Name of the outgroup')
-parser.add_argument('-1', '--P1', type = str, required = True, help = 'Name of species P1')
-parser.add_argument('-2', '--P2', type = str, required = True, help = 'Name of species P2')
-parser.add_argument('-3', '--P3', type = str, required = True, help = 'Name of species P3')
+parser.add_argument('-j', '--job_name', type=str, required=True, help='Unique job name for this run')
+parser.add_argument('-w', '--win_len', type = int, required = False, default = 10000, help = 'Window length for sliding window analysis')
+parser.add_argument('-o', '--outgroup', type = str, required = False, default = 'Outgroup', help = 'Name of the outgroup')
+parser.add_argument('-1', '--P1', type = str, required = False, default = 'Pop1', help = 'Name of species P1')
+parser.add_argument('-2', '--P2', type = str, required = False, default = 'Pop2', help = 'Name of species P2')
+parser.add_argument('-3', '--P3', type = str, required = False, default = 'Pop3', help = 'Name of species P3')
 #Define the parser
 args = parser.parse_args() 
 
 #Store arguments
-seq_file = args.seq_file
+job_name = args.job_name
 win_len = args.win_len
 outgroup = args.outgroup
 P1 = args.P1
@@ -34,6 +34,10 @@ P3 = args.P3
 #set base path
 #sequence_base_folder_path = seq_file
 #sequence_files = glob.glob(sequence_base_folder_path)
+
+output_folder = f"output_{job_name}"
+seq_file = os.path.join(output_folder, f"{job_name}.fa")
+
 col1 = 'Window_Number'
 col2 = 'Window_Start_Site'
 col3 = 'Window_Stop_Site'
@@ -114,7 +118,7 @@ if df['Number_of_AABB_Sites'].median() < 10:
 
 
 
-output_file = os.path.splitext(seq_file)[0] + '_slidingwindow.csv'
+output_file = os.path.join(output_folder, f"{job_name}_slidingwindow.csv")
 df.to_csv(output_file, index=False)
       
 #df.dropna() #removes missing values
