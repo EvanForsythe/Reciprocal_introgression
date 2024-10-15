@@ -34,8 +34,8 @@ parser = argparse.ArgumentParser(description='Script for simulating introgressio
 parser.add_argument('-j', '--JOBname', type=str, metavar='', required=True, help='Unique job name for this run of this script. Avoid including spaces or special characters ("_" is ok)') 
 parser.add_argument('-s', '--Seq_len', type=int, metavar='', required=False, default=10000000, help='Specify an interger to set length of total simulateed alignment (default = 10000000')
 parser.add_argument('-p', '--Prop_int', type=float, metavar='', required=False, default=0.2, help='Specify the proportion of genome to be introgressed with each introgression event (default = 0.2)')
-parser.add_argument('-m', '--Mut_rate', type=float, metavar='', required=False, default=0.0000001, help='Specify the mutation rate (default = 0.0000001)')
-parser.add_argument('-r', '--Recomb_rate', type=float, metavar='', required=False,default=0.0000000001, help='Specify the recomb rate (default = 0.0000000001)')
+parser.add_argument('-m', '--Mut_rate', type=float, metavar='', required=False, default=0.000001, help='Specify the mutation rate (default = 0.000001)')
+parser.add_argument('-r', '--Recomb_rate', type=float, metavar='', required=False,default=0.000000001, help='Specify the recomb rate (default =.000000001)')
 parser.add_argument('-n', '--Ne', type=int, metavar='', required=False, default=10000, help='Specify the effective pop size (Ne) (default = 10000)')
 
 #Time arguments
@@ -60,7 +60,10 @@ t_sp12=args.t_sp12
 t_sp123=args.t_sp123
 t_sp1234=args.t_sp1234
 
-
+# Create output folder
+output_folder = f"output_{JOBname}"
+if not os.path.exists(output_folder):
+    os.makedirs(output_folder)
 
 #Pop1=Africa
 #Pop2=Eurasia
@@ -130,7 +133,8 @@ ts_mutes = msprime.sim_mutations(ts, rate=Mut_rate, random_seed=None)
 
 
 #write a fasta file
-ts_mutes.write_fasta(JOBname+".fa", reference_sequence=tskit.random_nucleotides(ts.sequence_length))
+fasta_filename = os.path.join(output_folder, f"{JOBname}.fa")
+ts_mutes.write_fasta(fasta_filename, reference_sequence=tskit.random_nucleotides(ts.sequence_length))
 
 ### Pseudo code for editing file:
 #Create file handle for the fasta file that we wrote (open for reading)
@@ -138,33 +142,36 @@ ts_mutes.write_fasta(JOBname+".fa", reference_sequence=tskit.random_nucleotides(
 #Create file handle for a new file (open for 'appending')
 
 #Loop through and read each line of original file
-fasta_read_filename = JOBname+".fa"
-fasta_write_filename = JOBname+".fa.tmp"
-fasta_read_handle = open(fasta_read_filename, "r")
-fasta_write_handle = open(fasta_write_filename, "a")
+#fasta_read_filename = JOBname+".fa"
+#fasta_write_filename = JOBname+".fa.tmp"
+#fasta_read_handle = open(fasta_read_filename, "r")
+#fasta_write_handle = open(fasta_write_filename, "a")
 #Create an empty dictionary
 seq_dict = {}
 
 #Loop through the line in the file
-for line in fasta_read_handle:
-    if line.startswith(">"):
-        #Use the replae method to replace (use your dictionary)
-        id_temp = line.strip() #Removes "\n"
-        id_clean = id_temp.replace(">", "") #Removes ">" by replacing with nothing.
-        id_new = ''
-        if id_clean == "n0":
-                id_new = "Pop1"
-        elif id_clean == "n1":
-                id_new = "Pop2"
-        elif id_clean == "n2":
-                id_new = "Pop3"
-        elif id_clean == "n3":
-                id_new = "Outgroup"
+fasta_read_filename = fasta_filename
+fasta_write_filename = fasta_filename + ".tmp"
+with open(fasta_read_filename, 'r') as fasta_read_handle, open(fasta_write_filename, "a") as fasta_write_handle:
+    for line in fasta_read_handle:
+        if line.startswith(">"):
+            #Use the replae method to replace (use your dictionary)
+            id_temp = line.strip() #Removes "\n"
+            id_clean = id_temp.replace(">", "") #Removes ">" by replacing with nothing.
+            id_new = ''
+            if id_clean == "n0":
+                    id_new = "Pop1"
+            elif id_clean == "n1":
+                    id_new = "Pop2"
+            elif id_clean == "n2":
+                    id_new = "Pop3"
+            elif id_clean == "n3":
+                    id_new = "Outgroup"
+            else:
+                    id_new = id_clean 
+            fasta_write_handle.write(">" + id_new + "\n")
         else:
-                id_new = id_clean 
-        fasta_write_handle.write(">" + id_new + "\n")
-    else:
-       fasta_write_handle.write(line)
+            fasta_write_handle.write(line)
 
 sh.move(fasta_write_filename, fasta_read_filename)
 
@@ -226,6 +233,8 @@ if len(migrating_pop3_to_pop2) == 0 or len(migrating_pop2_to_pop3) == 0 or len(r
 col1 = "Introgression_Type"
 col2 = "Start_Site"
 col3 = "Stop_Site"
+
+csv_filename = os.path.join(output_folder, JOBname + ".csv")
 df = pd.DataFrame(columns = [col1,col2,col3])
 
 for migration in migrating_pop3_to_pop2:
@@ -238,4 +247,4 @@ for migration in recip_introgression:
 	df.loc[len(df)] = {col1: "Recip", col2: migration[0], col3: migration[1]}
 
 output_file = JOBname + ".csv"
-df.to_csv(output_file, index=False)
+df.to_csv(csv_filename, index=False)
