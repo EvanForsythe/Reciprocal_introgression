@@ -63,7 +63,7 @@ try:
 		#ask if the tract start site is greater than the counter
 		if row['Start_Site'] > current_site:
 			# create a new dataframe with one row
-			new_row = pd.DataFrame({'Introgression_Type': ['No_Int'], 'Start_Site': [current_site], 'Stop_Site': [row['Start_Site'] -1]})
+			new_row = pd.DataFrame({'Introgression_Type': ['No_Int'], 'Start_Site': [int(current_site)], 'Stop_Site': [int(row['Start_Site']) -1]})
 					
 			# Concatenate  the new row onto the sim dataframe
 			sim_df = pd.concat([sim_df, new_row], ignore_index = True)
@@ -79,7 +79,7 @@ try:
 
 	#Add a "no int" tract to the very end 
 	if last_row['Window_Stop_Site'] > current_site:
-			new_row = pd.DataFrame({'Introgression_Type': ['No_Int'], 'Start_Site': [current_site], 'Stop_Site': [last_row['Window_Stop_Site']]})
+			new_row = pd.DataFrame({'Introgression_Type': ['No_Int'], 'Start_Site': [int(current_site)], 'Stop_Site': [int(last_row['Window_Stop_Site'])]})
 			sim_df = pd.concat([sim_df, new_row], ignore_index = True)
 
 	##Sort again to make sure the df is ordered
@@ -287,6 +287,8 @@ try:
 	plt.close()
 	plt.rcdefaults()
 
+	# Create a filtered copy for the violin plot, keeping only unique tracts or "Recip" where overlaps exist
+	violin_df = sim_df[(sim_df['Introgression_Type'] == 'Recip') | (~sim_df.duplicated(subset=['Start_Site', 'Stop_Site'], keep=False))]
 	###################
 	### Violin Plot ###
 	###################
