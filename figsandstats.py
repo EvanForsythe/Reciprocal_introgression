@@ -32,8 +32,20 @@ sim_file = os.path.join(output_folder, f"{job_name}.csv")
 win_file = os.path.join(output_folder, f"{job_name}_slidingwindow.csv")
 
 quant_log_file = "Quant_results_log.tsv"
+quant_mean_log_file = "Quant_mean_results_log.tsv"
 
-try:		
+try:
+
+	#Write to the quantitative data log file
+	if not os.path.isfile(quant_log_file):
+		with open(quant_log_file, "a") as f:
+			f.write("Job_name\tMedian_no_int\tMedian_2to3\tMedian_3to2\tMedian_recip\n")
+
+
+	if not os.path.isfile(quant_mean_log_file):
+		with open(quant_log_file, "a") as f:
+			f.write("Job_name\tMean_no_int\tMean_2to3\tMean_3to2\tMean_recip\n")		
+
 	#Read in CSV files as dataframe
 	sim_df = pd.read_csv(sim_file)
 	win_df = pd.read_csv(win_file)
@@ -192,6 +204,38 @@ try:
 	sim_df.to_csv(output_file, index=False)
 
 
+
+	#create statistics: medians and means
+	avg_noint = np.mean(sim_df.loc[sim_df['Introgression_Type'] == 'No_Int']['Average_Dstat_for_windows_in_tract'])
+	avg_32 = np.mean(sim_df.loc[sim_df['Introgression_Type'] == 'pop3 to pop2']['Average_Dstat_for_windows_in_tract'])
+	avg_23 = np.mean(sim_df.loc[sim_df['Introgression_Type'] == 'pop2 to pop3']['Average_Dstat_for_windows_in_tract'])
+	avg_recip = np.mean(sim_df.loc[sim_df['Introgression_Type'] == 'Recip']['Average_Dstat_for_windows_in_tract'])
+
+	med_noint = np.median(sim_df.loc[sim_df['Introgression_Type'] == 'No_Int']['Average_Dstat_for_windows_in_tract'])
+	med_32 = np.median(sim_df.loc[sim_df['Introgression_Type'] == 'pop3 to pop2']['Average_Dstat_for_windows_in_tract'])
+	med_23 = np.median(sim_df.loc[sim_df['Introgression_Type'] == 'pop2 to pop3']['Average_Dstat_for_windows_in_tract'])
+	med_recip = np.median(sim_df.loc[sim_df['Introgression_Type'] == 'Recip']['Average_Dstat_for_windows_in_tract'])
+
+
+	
+
+	#check if reciprocal conditions are met
+	if avg_32 > 0 and avg_23 > 0 and med_recip == 0:
+		print("Reciprocal conditions passed")
+	else
+	print("Reciprocal conditions not met")
+
+
+	#write results to median and mean log files
+	with open (quant_log_file, "a") as f:
+		f.write(f"{job_name}\t{avg_noint}\t{avg_32}\t{avg_23}\t{avg_recip}\n")
+
+	
+	with open (quant_mean_log_file, "a") as f:
+		f.write(f"{job_name}\t{med_noint}\t{med_32}\t{med_23}\t{med_recip}\n")
+
+
+
 	#Get the start and stop sites of each type
 	migrating_pop3_to_pop2 = sim_df[sim_df['Introgression_Type'] == 'pop3 to pop2'][['Start_Site', 'Stop_Site']].to_numpy()
 	migrating_pop2_to_pop3 = sim_df[sim_df['Introgression_Type'] == 'pop2 to pop3'][['Start_Site', 'Stop_Site']].to_numpy()
@@ -322,27 +366,13 @@ try:
 	#print(sim_df[‘Introgression_Type’ == ‘No_Int’])
 	#print(sim_df.loc[sim_df['Introgression_Type'] == 'foo'])
 
-	avg_noint=np.median(list(sim_df.loc[sim_df['Introgression_Type'] == 'No_Int']['Average_Dstat_for_windows_in_tract']))
-	avg_32=np.median(list(sim_df.loc[sim_df['Introgression_Type'] == 'pop3 to pop2']['Average_Dstat_for_windows_in_tract']))
-	avg_23=np.median(list(sim_df.loc[sim_df['Introgression_Type'] == 'pop2 to pop3']['Average_Dstat_for_windows_in_tract']))
-	avg_recip=np.median(list(sim_df.loc[sim_df['Introgression_Type'] == 'Recip']['Average_Dstat_for_windows_in_tract']))
-
-	#Write to the quantitative data log file
-	if not os.path.isfile(quant_log_file):
-		with open(quant_log_file, "a") as f:
-			f.write("Job_name\tMedian_no_int\tMedian_2to3\tMedian_3to2\tMedian_recip\n")
-
-	with open (quant_log_file, "a") as f:
-		f.write(f"{job_name}\t{avg_noint}\t{avg_32}\t{avg_23}\t{avg_recip}\n")
-
 except Exception as e:
 	#Log NA values in case of failure
-	if not os.path.isfile(quant_log_file):
-		with open(quant_log_file, "a") as f:
-			f.write("Job_name\tMedian_no_int\tMedian_2to3\tMedian_3to2\tMedian_recip\n")
-
 	with open(quant_log_file, "a") as f:
 		f.write(f"{job_name}\tNA\tNA\tNA\tNA\n")
+
+	with open(quant_mean_log_file, "a") as f:
+		f.write(f"{job_name}\tNA\tNA\tNA\tNA\n")	
 
 		print(f"Error occurred: {e}")
 		sys.exit(1)
