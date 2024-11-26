@@ -32,19 +32,13 @@ sim_file = os.path.join(output_folder, f"{job_name}.csv")
 win_file = os.path.join(output_folder, f"{job_name}_slidingwindow.csv")
 
 quant_log_file = "Quant_results_log.tsv"
-quant_mean_log_file = "Quant_mean_results_log.tsv"
 
 try:
-
 	#Write to the quantitative data log file
 	if not os.path.isfile(quant_log_file):
 		with open(quant_log_file, "a") as f:
-			f.write("Job_name\tMedian_no_int\tMedian_2to3\tMedian_3to2\tMedian_recip\n")
+			f.write("Job_name\tMean_no_int\tMean_2to3\tMean_3to2\tMean_recip\tMedian_no_int\tMedian_2to3\tMedian_3to2\tMedian_recip\tMeans_test\tMedians_test\n")
 
-
-	if not os.path.isfile(quant_mean_log_file):
-		with open(quant_log_file, "a") as f:
-			f.write("Job_name\tMean_no_int\tMean_2to3\tMean_3to2\tMean_recip\n")		
 
 	#Read in CSV files as dataframe
 	sim_df = pd.read_csv(sim_file)
@@ -220,19 +214,13 @@ try:
 	
 
 	#check if reciprocal conditions are met
-	if avg_32 > 0 and avg_23 > 0 and med_recip == 0:
-		print("Reciprocal conditions passed")
-	else
-	print("Reciprocal conditions not met")
+	means_test = "Passed_means" if avg_32 > 0 and avg_23 > 0 and avg_recip < 0 else "Failed_means"
+	medians_test = "Passed_medians" if med_32 > 0 and med_23 > 0 and med_recip < 0 else "Failed_medians"
 
 
 	#write results to median and mean log files
 	with open (quant_log_file, "a") as f:
-		f.write(f"{job_name}\t{avg_noint}\t{avg_32}\t{avg_23}\t{avg_recip}\n")
-
-	
-	with open (quant_mean_log_file, "a") as f:
-		f.write(f"{job_name}\t{med_noint}\t{med_32}\t{med_23}\t{med_recip}\n")
+		f.write(f"{job_name}\t{avg_noint}\t{avg_32}\t{avg_23}\t{avg_recip}\t{med_noint}\t{med_32}\t{med_23}\t{med_recip}\t{means_test}\t{medians_test}\n")
 
 
 
@@ -369,13 +357,10 @@ try:
 except Exception as e:
 	#Log NA values in case of failure
 	with open(quant_log_file, "a") as f:
-		f.write(f"{job_name}\tNA\tNA\tNA\tNA\n")
+		f.write(f"{job_name}\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tFailed_means\tFailed_medians\n")
 
-	with open(quant_mean_log_file, "a") as f:
-		f.write(f"{job_name}\tNA\tNA\tNA\tNA\n")	
-
-		print(f"Error occurred: {e}")
-		sys.exit(1)
+	print(f"Error occurred: {e}")
+	sys.exit(1)
 
 # Slice sim_df to get a df that only contains no_int values
 # Get the average D-stat from those windows and save that value as a variable
