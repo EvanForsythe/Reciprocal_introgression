@@ -36,6 +36,7 @@ P3 = args.P3
 #sequence_files = glob.glob(sequence_base_folder_path)
 
 output_folder = f"output_{job_name}"
+#os.makedirs(output_folder, exist_ok=True) # Creates folder if it doesn't exist
 seq_file = os.path.join(output_folder, f"{job_name}.fa")
 
 col1 = 'Window_Number'
@@ -114,7 +115,7 @@ print("Column names:", df.columns)
 #print(df['D_Statistic'].mean())
 if df['Number_of_AABB_Sites'].median() < 10:
     print("ERROR: Detected low # of variable sites in sequences. Revise parameters used in Int_sim.py and/or sliding_window.py. Stopping...")
-    sys.exit()
+    sys.exit(1)
 
 
 
