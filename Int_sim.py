@@ -323,7 +323,6 @@ migrating_pop3_to_pop2 = get_migrating_tracts(ts, "Pop3")
 #print("hello")
 #Get the tracts from Pop2 -> Pop3
 migrating_pop2_to_pop3 = get_migrating_tracts(ts, "Pop2")
-print(migrating_pop2_to_pop3)
 
 #Get the overlap (reciprocal introgression)
 def find_overlap_intervals(arr1, arr2):

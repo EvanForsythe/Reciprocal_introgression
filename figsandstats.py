@@ -99,10 +99,12 @@ try:
 	#print(f"sim df: {num_rows_sim_df}")
 	#print(f"win_df: {num_rows_win_df}")
 
+	'''
 	if num_rows_sim_df > num_rows_win_df:
 		print("ERROR: # of tracts exceeded # of windows, which could result in unexpected behavior. Revise parameters used in Int_sim.py and/or sliding_window.py. Stopping...")
 		sys.exit()
-
+	'''
+	
 	#Loop through rows in dataframe
 	for ind, row in sim_df.iterrows():
 		#Get the start and stop site
@@ -150,7 +152,7 @@ try:
 		
 		#Check if there are items in the list and take average if so
 		if len(Dstatslist) < 1:
-			Daverage = 0
+			Daverage = np.nan
 		else:
 			Daverage = np.mean(Dstatslist)
 		
@@ -200,15 +202,15 @@ try:
 
 
 	#create statistics: medians and means
-	avg_noint = np.mean(sim_df.loc[sim_df['Introgression_Type'] == 'No_Int']['Average_Dstat_for_windows_in_tract'])
-	avg_32 = np.mean(sim_df.loc[sim_df['Introgression_Type'] == 'pop3 to pop2']['Average_Dstat_for_windows_in_tract'])
-	avg_23 = np.mean(sim_df.loc[sim_df['Introgression_Type'] == 'pop2 to pop3']['Average_Dstat_for_windows_in_tract'])
-	avg_recip = np.mean(sim_df.loc[sim_df['Introgression_Type'] == 'Recip']['Average_Dstat_for_windows_in_tract'])
+	avg_noint = np.nanmean(sim_df.loc[sim_df['Introgression_Type'] == 'No_Int']['Average_Dstat_for_windows_in_tract'])
+	avg_32 = np.nanmean(sim_df.loc[sim_df['Introgression_Type'] == 'pop3 to pop2']['Average_Dstat_for_windows_in_tract'])
+	avg_23 = np.nanmean(sim_df.loc[sim_df['Introgression_Type'] == 'pop2 to pop3']['Average_Dstat_for_windows_in_tract'])
+	avg_recip = np.nanmean(sim_df.loc[sim_df['Introgression_Type'] == 'Recip']['Average_Dstat_for_windows_in_tract'])
 
-	med_noint = np.median(sim_df.loc[sim_df['Introgression_Type'] == 'No_Int']['Average_Dstat_for_windows_in_tract'])
-	med_32 = np.median(sim_df.loc[sim_df['Introgression_Type'] == 'pop3 to pop2']['Average_Dstat_for_windows_in_tract'])
-	med_23 = np.median(sim_df.loc[sim_df['Introgression_Type'] == 'pop2 to pop3']['Average_Dstat_for_windows_in_tract'])
-	med_recip = np.median(sim_df.loc[sim_df['Introgression_Type'] == 'Recip']['Average_Dstat_for_windows_in_tract'])
+	med_noint = np.nanmedian(sim_df.loc[sim_df['Introgression_Type'] == 'No_Int']['Average_Dstat_for_windows_in_tract'])
+	med_32 = np.nanmedian(sim_df.loc[sim_df['Introgression_Type'] == 'pop3 to pop2']['Average_Dstat_for_windows_in_tract'])
+	med_23 = np.nanmedian(sim_df.loc[sim_df['Introgression_Type'] == 'pop2 to pop3']['Average_Dstat_for_windows_in_tract'])
+	med_recip = np.nanmedian(sim_df.loc[sim_df['Introgression_Type'] == 'Recip']['Average_Dstat_for_windows_in_tract'])
 
 
 	
