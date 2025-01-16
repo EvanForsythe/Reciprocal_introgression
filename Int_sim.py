@@ -36,8 +36,8 @@ parser = argparse.ArgumentParser(description='Script for simulating introgressio
 parser.add_argument('-j', '--JOBname', type=str, metavar='', required=True, help='Unique job name for this run of this script. Avoid including spaces or special characters ("_" is ok)') 
 parser.add_argument('-s', '--Seq_len', type=int, metavar='', required=False, default=10000000, help='Specify an interger to set length of total simulateed alignment (default = 10000000')
 parser.add_argument('-p', '--Prop_int', type=float, metavar='', required=False, default=0.2, help='Specify the proportion of genome to be introgressed with each introgression event (default = 0.2)')
-parser.add_argument('-m', '--Mut_rate', type=float, metavar='', required=False, default=0.000001, help='Specify the mutation rate (default = 0.000001)')
-parser.add_argument('-r', '--Recomb_rate', type=float, metavar='', required=False,default=0.000000001, help='Specify the recomb rate (default =.000000001)')
+parser.add_argument('-m', '--Mut_rate', type=float, metavar='', required=False, default=0.0000005, help='Specify the mutation rate (default = 0.000001)')
+parser.add_argument('-r', '--Recomb_rate', type=float, metavar='', required=False,default=0.0000000005, help='Specify the recomb rate (default =.000000001)')
 parser.add_argument('-n', '--Ne', type=int, metavar='', required=False, default=10000, help='Specify the effective pop size (Ne) (default = 10000)')
 
 #Time arguments
