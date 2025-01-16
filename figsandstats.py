@@ -91,7 +91,6 @@ try:
 	##Sort again to make sure the df is ordered
 	sim_df = sim_df.sort_values(by = 'Start_Site')
 
-
 	### ASK WHETHER SIMDF HAS MORE ROWS THAN WINDOWS DF??
 	num_rows_sim_df = len(sim_df)
 	num_rows_win_df = len(win_df)
@@ -105,37 +104,39 @@ try:
 		sys.exit()
 	'''
 	
-	#Loop through rows in dataframe
+	#Create empty windows dataframe
+	new_windows_df=pd.DataFrame(columns=win_df.columns.tolist()+['Introgression_Type']) 
+	print(new_windows_df)
+
+	# Loop through rows in the dataframe
 	for ind, row in sim_df.iterrows():
-		#Get the start and stop site
-		temp_block_start = sim_df['Start_Site'][ind]
-		temp_block_stop = sim_df['Stop_Site'][ind]
+		# Get the start and stop site
+		temp_int_type = row['Introgression_Type']
+		temp_block_start = row['Start_Site']
+		temp_block_stop = row['Stop_Site']
 
-		#n=0
+		# Filter windows falling within blocks
+		filteredtemp = win_df[(win_df['Window_Start_Site'] >= temp_block_start) & 
+							(win_df['Window_Stop_Site'] <= temp_block_stop)]
 
-		#while temp_block_start >= win_df['Window_Start_Site'][n]:
-			#temp_win_start = win_df['Window_Start_Site'][n]
-			#start_index = n
-			#n += 1
+		# Skip empty results
+		if filteredtemp.empty:
+			continue
 
-		#n = 0
-		#while temp_block_stop > win_df['Window_Stop_Site'][n]:
-			#n += 1
-			#end_index = n
-			#temp_win_stop = win_df['Window_Stop_Site'][n]
+		# Create a copy to avoid SettingWithCopyWarning
+		filteredtemp = filteredtemp.copy()
 
-		#print(temp_block_start)
-		#print(temp_block_stop)
-		
-		#Get all windows falling within blocks
-		filteredtemp = win_df[(win_df['Window_Start_Site'] >= temp_block_start) & (win_df['Window_Stop_Site'] <= temp_block_stop)]
-		
+		# Broadcast the new column value to all rows
+		filteredtemp['Introgression_Type'] = temp_int_type
+
+		# Append rows to the new dataframe
+		new_windows_df = pd.concat([new_windows_df, filteredtemp], ignore_index=True)
+
 		#print(filteredtemp)
 		
 		#Get Dstat values for windows within the block
 		Dstatslist = filteredtemp[['D_Statistic']].to_numpy()
 
-		
 		#Dstatslist = []
 		#for x in range(start_index,(end_index + 1)):
 			#Dstatslist.append(win_df['D-Statistic'][x])
@@ -163,7 +164,11 @@ try:
 		for i in list(filteredtemp['Window_Number']):
 			if i not in Intwindows:
 				Intwindows.append(i)
-		
+
+
+	#Write the new file
+	new_windows_df.to_csv(os.path.join(output_folder, f"{job_name}_windows_with_int_info.csv"), index=False)
+
 	#Add Int windows to list
 	#print("Intwindows:")
 	#print(Intwindows)
