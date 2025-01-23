@@ -358,7 +358,7 @@ col1 = "Introgression_Type"
 col2 = "Start_Site"
 col3 = "Stop_Site"
 
-csv_filename = os.path.join(output_folder, JOBname + ".csv")
+output_file= os.path.join(output_folder, f"{JOBname}_introgression_info.csv")
 df = pd.DataFrame(columns = [col1,col2,col3])
 
 for migration in migrating_pop3_to_pop2:
@@ -370,5 +370,4 @@ for migration in migrating_pop2_to_pop3:
 for migration in recip_introgression:
 	df.loc[len(df)] = {col1: "Recip", col2: migration[0], col3: migration[1]}
 
-output_file = JOBname + ".csv"
-df.to_csv(csv_filename, index=False)
+df.to_csv(output_file, index=False)

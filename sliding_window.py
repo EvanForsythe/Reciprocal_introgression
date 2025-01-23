@@ -119,7 +119,7 @@ if df['Number_of_AABB_Sites'].median() < 10:
 
 
 
-output_file = os.path.join(output_folder, f"{job_name}_slidingwindow.csv")
+output_file = os.path.join(output_folder, f"{job_name}_windows_with_d_stat.csv")
 df.to_csv(output_file, index=False)
       
 #df.dropna() #removes missing values

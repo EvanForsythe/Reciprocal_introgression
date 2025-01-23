@@ -28,8 +28,10 @@ job_name = args.job_name
 #win_file = f"{job_name}_slidingwindow.csv"
 
 output_folder = f"output_{job_name}"
-sim_file = os.path.join(output_folder, f"{job_name}.csv")
-win_file = os.path.join(output_folder, f"{job_name}_slidingwindow.csv")
+sim_file = os.path.join(output_folder, f"{job_name}_introgression_info.csv")
+win_file = os.path.join(output_folder, f"{job_name}_windows_with_d_stat.csv")
+output_combined_file = os.path.join(output_folder, f"{job_name}_combined_stats_and_figures.csv")
+violin_plot_file = os.path.join(output_folder, f"{job_name}_violin_plot.pdf")
 
 quant_log_file = "Quant_results_log.tsv"
 
@@ -44,6 +46,13 @@ try:
 	sim_df = pd.read_csv(sim_file)
 	win_df = pd.read_csv(win_file)
 
+	required_sim_columns = {'Introgression_Type', 'Start_Site', 'Stop_Site'}
+	required_win_columns = {'Window_Start_Site', 'Window_Stop_Site', 'D_Statistic'}
+	if not required_sim_columns.issubset(sim_df.columns):
+		raise ValueError(f"{sim_file} is missing required columns: {required_sim_columns}")
+	if not required_win_columns.issubset(win_df.columns):
+		raise ValueError(f"{win_file} is missing required columns: {required_win_columns}")
+
 	# Create blank lists
 	Davglist = []
 	Intwindows = []
@@ -56,7 +65,8 @@ try:
 	#print(f"windf before: {num_rows_win_df_before}")
 
 	#Sort the whole Data Frame by Start Site 	
-	sim_df = sim_df.sort_values(by = 'Start_Site')
+	sim_df = sim_df.drop_duplicates(subset=['Start_Site', 'Stop_Site']).sort_values(by = 'Start_Site').reset_index(drop=True)
+	win_df = win_df.drop_duplicates(subset=['Window_Start_Site', 'Window_Stop_Site']).sort_values(by='Window_Start_Site').reset_index(drop=True)
 
 	#Create a counter
 	current_site = 0
@@ -119,23 +129,49 @@ try:
 		filteredtemp = win_df[(win_df['Window_Start_Site'] >= temp_block_start) & 
 							(win_df['Window_Stop_Site'] <= temp_block_stop)]
 
-		# Skip empty results
+		print(f"processing row {ind}: Start={temp_block_start}, Stop={temp_block_stop}")
+		print(f"filtered rows: {len(filteredtemp)}")
+
+
+		#Handle filtered results
 		if filteredtemp.empty:
-			continue
+			print(f"No matching windows for row {ind}. Appending NaN to Davglist")
+			Davglist.append(np.nan)
+		else:
+			avg_dstat = filteredtemp[[D_Statistic]].mean()
+			Davglist.append(avg_dstat)
+
+			#Append filteredtemp rows to new_windows_df
+			filteredtemp=filteredtemp.copy()
+			filteredtemp['Introgression_Type'] = temp_int_type
+			new_windows_df = pd.concat([new_windows_df, filteredtemp], ignore_index=True)
+
+	#Validate lengths
+	if len(Davglist) != len(sim_df):
+		raise ValueError(f"Length mismatch: Davglist({len(Davglist)}) != sim_df({len(sim_df)})")
+	
+	print(f"Successfully processed {len(sim_df)} rows.")
+
+		# Skip empty results
+		#if filteredtemp.empty:
+			#continue
 
 		# Create a copy to avoid SettingWithCopyWarning
-		filteredtemp = filteredtemp.copy()
+			#filteredtemp = filteredtemp.copy()
 
 		# Broadcast the new column value to all rows
-		filteredtemp['Introgression_Type'] = temp_int_type
+		#filteredtemp['Introgression_Type'] = temp_int_type
 
 		# Append rows to the new dataframe
-		new_windows_df = pd.concat([new_windows_df, filteredtemp], ignore_index=True)
+			#new_windows_df = pd.concat([new_windows_df, filteredtemp], ignore_index=True)
 
 		#print(filteredtemp)
 		
-		#Get Dstat values for windows within the block
-		Dstatslist = filteredtemp[['D_Statistic']].to_numpy()
+		#Get Dstat values for windows within the block 
+			#Dstatslist = filteredtemp[['D_Statistic']].to_numpy()
+			#avg_dstat = np.mean(Dstatslist) if len(Dstatslist) > 0 else np.nan
+
+			#Davglist.append(avg_dstat)
 
 		#Dstatslist = []
 		#for x in range(start_index,(end_index + 1)):
@@ -152,18 +188,18 @@ try:
 		#print(Dstatslist)
 		
 		#Check if there are items in the list and take average if so
-		if len(Dstatslist) < 1:
-			Daverage = np.nan
-		else:
-			Daverage = np.mean(Dstatslist)
+		#if len(Dstatslist) < 1:
+			#Daverage = np.nan
+		#else:
+			#Daverage = np.mean(Dstatslist)
 		
 		#Add D average values to list
-		Davglist.append(Daverage)
+		#Davglist.append(Daverage)
 		
 		
-		for i in list(filteredtemp['Window_Number']):
-			if i not in Intwindows:
-				Intwindows.append(i)
+		#for i in list(filteredtemp['Window_Number']):
+			#if i not in Intwindows:
+				#Intwindows.append(i)
 
 
 	#Write the new file
@@ -182,9 +218,13 @@ try:
 	#print("NoIntWindows:")
 	#print(NoIntWindows)
 
+	#DEBUGGING
 
+	print(f"Length of sim_df: {len(sim_df)}")
+	print(f"Length of Davglist: {len(Davglist)}")
 	#Add the Dstat averages for the windows in each tract
 	sim_df['Average_Dstat_for_windows_in_tract'] = Davglist
+	sim_df.to_csv(output_combined_file, index=False)
 	#print("THIS IS THE SIM_DF:")
 	#print(sim_df)
 
@@ -199,7 +239,7 @@ try:
 	#print(sim_df.tail())
 
 	#output_file = os.path.splitext(sim_file)[0] + '_figsandstats.csv'
-	output_file = os.path.join(output_folder, f"{job_name}_figsandstats.csv")
+	output_file = os.path.join(output_folder, f"{job_name}_plot_and_stat_summary.csv")
 
 	#output_file = 'figs_and_stats_output_file.csv' 
 	sim_df.to_csv(output_file, index=False)
@@ -320,7 +360,7 @@ try:
 	plt.legend()
 	#plt.show()
 
-	fig_file = os.path.join(output_folder, f"{job_name}_figsandstats.pdf")
+	fig_file = os.path.join(output_folder, f"{job_name}_introgression_plots.pdf")
 	fig.savefig(fig_file)
 
 	plt.close()
