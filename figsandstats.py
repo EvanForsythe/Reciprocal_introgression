@@ -28,8 +28,8 @@ job_name = args.job_name
 #win_file = f"{job_name}_slidingwindow.csv"
 
 output_folder = f"output_{job_name}"
-sim_file = os.path.join(output_folder, f"{job_name}.csv")
-win_file = os.path.join(output_folder, f"{job_name}_slidingwindow.csv")
+sim_file = os.path.join(output_folder, f"{job_name}_introgression_info.csv")
+win_file = os.path.join(output_folder, f"{job_name}_windows_with_d_stat.csv")
 
 quant_log_file = "Quant_results_log.tsv"
 
@@ -52,8 +52,8 @@ try:
 	## Add "no int" tracts to the sim df
 	num_rows_sim_df_before = len(sim_df)
 	num_rows_win_df_before = len(win_df)
-	#print(f"simdf before: {num_rows_sim_df_before}")
-	#print(f"windf before: {num_rows_win_df_before}")
+	print(f"simdf before: {num_rows_sim_df_before}")
+	print(f"windf before: {num_rows_win_df_before}")
 
 	#Sort the whole Data Frame by Start Site 	
 	sim_df = sim_df.sort_values(by = 'Start_Site')
@@ -121,6 +121,8 @@ try:
 
 		# Skip empty results
 		if filteredtemp.empty:
+			print(f"No matching windows for tract: {row}")
+			Davglist.append(np.nan)
 			continue
 
 		# Create a copy to avoid SettingWithCopyWarning
@@ -374,4 +376,3 @@ except Exception as e:
 # Repeat for the other three types of int
 # After you the four different averages, append them into a list
 # Write that list to the csv file (which will add a row to the csv file)
-
