@@ -23,16 +23,16 @@ import shutil as sh
 import itertools
 
 
-#Set wd
+# Set wd
 working_dir = sys.path[0]+'/' 
 os.chdir(working_dir)
 
-#os.chdir('/Users/esforsythe/Documents/OSU/Work/Research/Reciprocal_introgression/Reciprocal_introgression/')
+# os.chdir('/Users/esforsythe/Documents/OSU/Work/Research/Reciprocal_introgression/Reciprocal_introgression/')
 
-#Set up an argumanet parser
+# Set up an argumanet parser to accept command-line inputs
 parser = argparse.ArgumentParser(description='Script for simulating introgression')
 
-#Add arguments
+# Define required and optional arguments
 parser.add_argument('-j', '--JOBname', type=str, metavar='', required=True, help='Unique job name for this run of this script. Avoid including spaces or special characters ("_" is ok)') 
 parser.add_argument('-s', '--Seq_len', type=int, metavar='', required=False, default=10000000, help='Specify an interger to set length of total simulateed alignment (default = 10000000')
 parser.add_argument('-p', '--Prop_int', type=float, metavar='', required=False, default=0.2, help='Specify the proportion of genome to be introgressed with each introgression event (default = 0.2)')
@@ -40,7 +40,7 @@ parser.add_argument('-m', '--Mut_rate', type=float, metavar='', required=False, 
 parser.add_argument('-r', '--Recomb_rate', type=float, metavar='', required=False,default=0.0000000005, help='Specify the recomb rate (default =.000000001)')
 parser.add_argument('-n', '--Ne', type=int, metavar='', required=False, default=10000, help='Specify the effective pop size (Ne) (default = 10000)')
 
-#Time arguments
+# Define timing of events (in years ago)
 parser.add_argument('-1', '--t_int', type=int, metavar='', required=False, default=40000 , help='Time of introgression (years ago) (default = 40000)')
 parser.add_argument('-2', '--t_sp12', type=int, metavar='', required=False,default=80000 , help='Time of first most recent speciation (years ago) (default = 80000)')
 parser.add_argument('-3', '--t_sp123', type=int, metavar='', required=False,default=120000 , help='Time of second most recent speciation (default = 120000)')
@@ -51,6 +51,7 @@ parser.add_argument('-4', '--t_sp1234', type=int, metavar='', required=False, de
 #Define the parser
 args = parser.parse_args()
 
+# Assign parsed arguments to variables
 JOBname=args.JOBname
 Seq_len=args.Seq_len
 Prop_int=args.Prop_int
@@ -62,41 +63,32 @@ t_sp12=args.t_sp12
 t_sp123=args.t_sp123
 t_sp1234=args.t_sp1234
 
-# Create output folder
+# Create output directory if it doesn't exist
 output_folder = f"output_{JOBname}"
 if not os.path.exists(output_folder):
     os.makedirs(output_folder)
 
-#Pop1=Africa
-#Pop2=Eurasia
-#POp3=Neanderthal
-#Pop4=Chimanzee
+    ###################
+    # SET UP DEMOGRAPHIC MODEL #
+	###################
 
-#Get list of taxa
+# Define taxa names for simulation
 taxa_names=["Pop1", "Pop2", "Pop3", "Outgroup"]
-
-# Track introgression events manually
-introgression_events = []
-
-#set up a demographic history 
 
 #Setup the simulations
 #time_units = 1000 / 25  # Conversion factor for kya to generations
+# set up a demographic history 
 demography = msprime.Demography()
 
 
-#Loop through taxa and add each as a population
+#Loop through taxa and add each as a population to the demography
 for t_name in taxa_names:
     demography.add_population(name=t_name, initial_size=Ne)
     print(f'Adding population: {t_name}')
 
+# Define introgression events
+introgression_events = []
 
-#t_int=40000
-#t_sp12=80000
-#t_sp123=120000
-#t_sp1234=200000
-
-# introgression 50 kya
 demography.add_mass_migration(
     time=t_int, source="Pop2", dest="Pop3", proportion=Prop_int)
 #Track info about introgression event
@@ -110,20 +102,16 @@ demography.add_mass_migration(
 introgression_events.append({"time": t_int, "source": "Pop1", "dest": "Ghost", "proportion": Prop_int})
 
 
-# Speciation event
-demography.add_mass_migration(
-    time=t_sp12, source="Pop2", dest="Pop1", proportion=1)
+# Define speciation events
+demography.add_mass_migration(time=t_sp12, source="Pop2", dest="Pop1", proportion=1)
+demography.add_mass_migration(time=t_sp123, source="Pop3", dest="Pop1", proportion=1)
+demography.add_mass_migration(time=t_sp1234, source="Pop1", dest="Outgroup", proportion=1)
 
-# Speciation event
-demography.add_mass_migration(
-    time=t_sp123, source="Pop3", dest="Pop1", proportion=1)
+    ###################
+    # Simulate Genealogy and Mutations #
+	###################
 
-# Speciation event
-demography.add_mass_migration(
-    time=t_sp1234, source="Pop1", dest="Outgroup", proportion=1)
-
-
-
+# Simulate tree sequence with recombination
 ts = msprime.sim_ancestry(
     recombination_rate=Recomb_rate,
     sequence_length=Seq_len, 
@@ -142,7 +130,10 @@ ts = msprime.sim_ancestry(
 ts_mutes = msprime.sim_mutations(ts, rate=Mut_rate, random_seed=None)
 
 
-# Simulation statistics
+    ###################
+    # Compute Simulation Statistics #
+	###################
+
 # Count the number of tracts (haplotype blocks) and calculate their average length
 total_length = 0
 num_tracts = 0

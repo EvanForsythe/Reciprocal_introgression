@@ -101,28 +101,17 @@ try:
 							(win_df['Window_Stop_Site'] <= temp_block_stop)]
 
 		# Skip empty results
-		if filteredtemp.empty:
-			print(f"No matching windows for tract: {row}")
-			Davglist.append(np.nan)
-			continue
+		if not filteredtemp.empty:
+			filteredtemp = filteredtemp.copy()
+			filteredtemp['Introgression_Type'] = temp_int_type # Assign introgression type to the filtered windows
+			new_windows_df = pd.concat([new_windows_df, filteredtemp], ignore_index=True) # Append rows to the new dataframe
 
-		# Create a copy to avoid SettingWithCopyWarning
-		filteredtemp = filteredtemp.copy()
-		# Assign introgression type to the filtered windows
-		filteredtemp['Introgression_Type'] = temp_int_type
 
-		# Append rows to the new dataframe
-		new_windows_df = pd.concat([new_windows_df, filteredtemp], ignore_index=True)
-		
-		# Computer average D-statistic for the windows iwthin the introgression tract
-		Dstatslist = filteredtemp[['D_Statistic']].to_numpy()
-
-		
-		# Check if there are items in the list and take average if so
-		if len(Dstatslist) < 1:
-			Daverage = np.nan
+			Dstatslist = filteredtemp[['D_Statistic']].to_numpy() # Compute average D-statistic for the windows iwthin the introgression tract
+			Daverage = np.mean(Dstatslist) if len(Dstatslist) > 0 else np.nan
 		else:
-			Daverage = np.mean(Dstatslist)
+			Daverage = np.nan
+
 		
 		# Add D average values to list
 		Davglist.append(Daverage)
@@ -145,32 +134,7 @@ try:
 
 
 
-	##########################
-	### Computer Statistics ###
-	##########################
-
-	# Calculate the mean and median D-statistics for each introgression type
-	avg_noint = np.nanmean(sim_df.loc[sim_df['Introgression_Type'] == 'No_Int']['Average_Dstat_for_windows_in_tract'])
-	avg_32 = np.nanmean(sim_df.loc[sim_df['Introgression_Type'] == 'pop3 to pop2']['Average_Dstat_for_windows_in_tract'])
-	avg_23 = np.nanmean(sim_df.loc[sim_df['Introgression_Type'] == 'pop2 to pop3']['Average_Dstat_for_windows_in_tract'])
-	avg_recip = np.nanmean(sim_df.loc[sim_df['Introgression_Type'] == 'Recip']['Average_Dstat_for_windows_in_tract'])
-
-	med_noint = np.nanmedian(sim_df.loc[sim_df['Introgression_Type'] == 'No_Int']['Average_Dstat_for_windows_in_tract'])
-	med_32 = np.nanmedian(sim_df.loc[sim_df['Introgression_Type'] == 'pop3 to pop2']['Average_Dstat_for_windows_in_tract'])
-	med_23 = np.nanmedian(sim_df.loc[sim_df['Introgression_Type'] == 'pop2 to pop3']['Average_Dstat_for_windows_in_tract'])
-	med_recip = np.nanmedian(sim_df.loc[sim_df['Introgression_Type'] == 'Recip']['Average_Dstat_for_windows_in_tract'])
-
-
 	
-
-	# Check if reciprocal conditions are met
-	means_test = "Passed_means" if avg_32 > 0 and avg_23 > 0 and avg_recip < 0 else "Failed_means"
-	medians_test = "Passed_medians" if med_32 > 0 and med_23 > 0 and med_recip < 0 else "Failed_medians"
-
-
-	# Write results to median and mean log files
-	with open (quant_log_file, "a") as f:
-		f.write(f"{job_name}\t{avg_noint}\t{avg_32}\t{avg_23}\t{avg_recip}\t{med_noint}\t{med_32}\t{med_23}\t{med_recip}\t{means_test}\t{medians_test}\n")
 
 
 
@@ -239,8 +203,13 @@ try:
 
 	valid_windows_df = new_windows_df.dropna(subset=['Introgression_Type'])
 
+
+	# Define order and color mapping for each introgression type
+	category_order = ["No_Int", "pop2 to pop3", "pop3 to pop2", "Recip"]
+	color_palette = {"No_Int": "C3", "pop2 to pop3": "C1", "pop3 to pop2": "C0", "Recip": "C2"}
+
 	# Generate the plot
-	sns.violinplot(x = "Introgression_Type", y = "D_Statistic", data = valid_windows_df, split = False)
+	sns.violinplot(x = "Introgression_Type", y = "D_Statistic", data = valid_windows_df, hue = "Introgression_Type", order = category_order, palette = color_palette, cut = 0, bw_adjust =0.5, alpha = 0.7)
 	plt.ylim(-1,1)
 	plt.axhline(y=0, color='r', linestyle = '--')
 
@@ -249,6 +218,34 @@ try:
 	#Save the figure
 	plt.savefig(violin_file)
 	plt.close()
+
+
+	##########################
+	### Compute Statistics + Pass/Fail ###
+	##########################
+
+	# Calculate the mean and median D-statistics for each introgression type
+	avg_noint = np.nanmean(sim_df.loc[sim_df['Introgression_Type'] == 'No_Int']['Average_Dstat_for_windows_in_tract'])
+	avg_32 = np.nanmean(sim_df.loc[sim_df['Introgression_Type'] == 'pop3 to pop2']['Average_Dstat_for_windows_in_tract'])
+	avg_23 = np.nanmean(sim_df.loc[sim_df['Introgression_Type'] == 'pop2 to pop3']['Average_Dstat_for_windows_in_tract'])
+	avg_recip = np.nanmean(sim_df.loc[sim_df['Introgression_Type'] == 'Recip']['Average_Dstat_for_windows_in_tract'])
+
+	med_noint = np.nanmedian(sim_df.loc[sim_df['Introgression_Type'] == 'No_Int']['Average_Dstat_for_windows_in_tract'])
+	med_32 = np.nanmedian(sim_df.loc[sim_df['Introgression_Type'] == 'pop3 to pop2']['Average_Dstat_for_windows_in_tract'])
+	med_23 = np.nanmedian(sim_df.loc[sim_df['Introgression_Type'] == 'pop2 to pop3']['Average_Dstat_for_windows_in_tract'])
+	med_recip = np.nanmedian(sim_df.loc[sim_df['Introgression_Type'] == 'Recip']['Average_Dstat_for_windows_in_tract'])
+
+
+	
+
+	# Check if reciprocal conditions are met
+	means_test = "Passed_means" if avg_32 > 0 and avg_23 > 0 and avg_recip < 0 else "Failed_means"
+	medians_test = "Passed_medians" if med_32 > 0 and med_23 > 0 and med_recip < 0 else "Failed_medians"
+
+
+	# Write results to median and mean log files
+	with open (quant_log_file, "a") as f:
+		f.write(f"{job_name}\t{avg_noint}\t{avg_32}\t{avg_23}\t{avg_recip}\t{med_noint}\t{med_32}\t{med_23}\t{med_recip}\t{means_test}\t{medians_test}\n")
 
 
 except Exception as e:
