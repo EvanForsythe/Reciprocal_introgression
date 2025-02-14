@@ -99,7 +99,7 @@ introgression_events.append({"time": t_int, "source": "Pop2", "dest": "Pop3", "p
 demography.add_mass_migration(
     time=t_int, source="Pop3", dest="Pop2", proportion=Prop_int)
 #Track info about introgression event
-introgression_events.append({"time": t_int, "source": "Pop1", "dest": "Ghost", "proportion": Prop_int})
+introgression_events.append({"time": t_int, "source": "Pop3", "dest": "Pop2", "proportion": Prop_int})
 
 
 # Define speciation events
@@ -309,11 +309,11 @@ def get_migrating_tracts(ts, dest_pop):
     return np.array(migrating_tracts) 
 
 #Get the tracts from Pop3 -> Pop2
-migrating_pop3_to_pop2 = get_migrating_tracts(ts, "Pop3")
+migrating_pop3_to_pop2 = get_migrating_tracts(ts, "Pop2")
 
 #print("hello")
 #Get the tracts from Pop2 -> Pop3
-migrating_pop2_to_pop3 = get_migrating_tracts(ts, "Pop2")
+migrating_pop2_to_pop3 = get_migrating_tracts(ts, "Pop3")
 
 #Get the overlap (reciprocal introgression)
 def find_overlap_intervals(arr1, arr2):
