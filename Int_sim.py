@@ -40,7 +40,7 @@ parser.add_argument('-m', '--Mut_rate', type=float, metavar='', required=False, 
 parser.add_argument('-r', '--Recomb_rate', type=float, metavar='', required=False,default=0.0000000005, help='Specify the recomb rate (default =.000000001)')
 parser.add_argument('-n', '--Ne', type=int, metavar='', required=False, default=10000, help='Specify the effective pop size (Ne) (default = 10000)')
 
-# Define timing of events (in years ago)
+# Define timing of events (in years ago) for introgression and speciation events
 parser.add_argument('-1', '--t_int', type=int, metavar='', required=False, default=40000 , help='Time of introgression (years ago) (default = 40000)')
 parser.add_argument('-2', '--t_sp12', type=int, metavar='', required=False,default=80000 , help='Time of first most recent speciation (years ago) (default = 80000)')
 parser.add_argument('-3', '--t_sp123', type=int, metavar='', required=False,default=120000 , help='Time of second most recent speciation (default = 120000)')
@@ -63,55 +63,49 @@ t_sp12=args.t_sp12
 t_sp123=args.t_sp123
 t_sp1234=args.t_sp1234
 
-# Create output directory if it doesn't exist
+# Create an output folder for this simulation run
 output_folder = f"output_{JOBname}"
 if not os.path.exists(output_folder):
     os.makedirs(output_folder)
 
-    ###################
-    # SET UP DEMOGRAPHIC MODEL #
-	###################
+    #################################
+    # SET UP DEMOGRAPHIC MODEL 
+	#################################
 
 # Define taxa names for simulation
 taxa_names=["Pop1", "Pop2", "Pop3", "Outgroup"]
 
-#Setup the simulations
-#time_units = 1000 / 25  # Conversion factor for kya to generations
-# set up a demographic history 
+# Initialize the demographic model with nsprime.Demography
 demography = msprime.Demography()
 
 
-#Loop through taxa and add each as a population to the demography
+# Loop through taxa and add each as a population to the demography
 for t_name in taxa_names:
     demography.add_population(name=t_name, initial_size=Ne)
     print(f'Adding population: {t_name}')
 
-# Define introgression events
+# Define introgression events (bidirectional migration between Pop2 and Pop3)
 introgression_events = []
 
-demography.add_mass_migration(
-    time=t_int, source="Pop2", dest="Pop3", proportion=Prop_int)
-#Track info about introgression event
+# Add mass migration event: Pop2 -> Pop3
+demography.add_mass_migration(time=t_int, source="Pop2", dest="Pop3", proportion=Prop_int)
 introgression_events.append({"time": t_int, "source": "Pop2", "dest": "Pop3", "proportion": Prop_int})
 
-#opposite direction introgression
-# introgression 50 kya
-demography.add_mass_migration(
-    time=t_int, source="Pop3", dest="Pop2", proportion=Prop_int)
-#Track info about introgression event
-introgression_events.append({"time": t_int, "source": "Pop1", "dest": "Ghost", "proportion": Prop_int})
+# Add mass migration event: Pop3 -> Pop2
+demography.add_mass_migration(time=t_int, source="Pop3", dest="Pop2", proportion=Prop_int)
+introgression_events.append({"time": t_int, "source": "Pop3", "dest": "Pop2", "proportion": Prop_int})
 
 
-# Define speciation events
+# Define speciation events by adding mass migrations to merge populations
 demography.add_mass_migration(time=t_sp12, source="Pop2", dest="Pop1", proportion=1)
 demography.add_mass_migration(time=t_sp123, source="Pop3", dest="Pop1", proportion=1)
 demography.add_mass_migration(time=t_sp1234, source="Pop1", dest="Outgroup", proportion=1)
 
-    ###################
-    # Simulate Genealogy and Mutations #
-	###################
+    ####################################
+    # SIMULATE GENEAOLGY AND MUTATIONS 
+	####################################
 
-# Simulate tree sequence with recombination
+# Simulate tree sequence with recombination using msprime
 ts = msprime.sim_ancestry(
     recombination_rate=Recomb_rate,
     sequence_length=Seq_len, 
@@ -126,15 +120,15 @@ ts = msprime.sim_ancestry(
 )
 
 
-# Generate mutations on the tree sequence
+# Generate mutations along the simulated tree sequence
 ts_mutes = msprime.sim_mutations(ts, rate=Mut_rate, random_seed=None)
 
 
-    ###################
-    # Compute Simulation Statistics #
-	###################
+    #################################
+    # COMPUTE SIMULATION STATISTICS
+	#################################
 
-# Count the number of tracts (haplotype blocks) and calculate their average length
+# Count the number of migration tracts (haplotype blocks) and calculate their average length
 total_length = 0
 num_tracts = 0
 
@@ -146,7 +140,7 @@ for migration in ts.migrations():
 # Calculate the average length
 average_length = total_length / num_tracts if num_tracts > 0 else 0
 
-# Calculate total sequence divergence (average pairwise divergence)
+# Function to calculate total sequence divergence (average pairwise divergence)
 def calculate_total_divergence(tree_sequence):
     divergence = 0
     pair_count = 0
@@ -162,6 +156,10 @@ def calculate_total_divergence(tree_sequence):
 
 total_divergence = calculate_total_divergence(ts_mutes)
 print(f"Total sequence divergence (average pairwise divergence): {total_divergence:.6f} substitutions/site")
+
+######################################################
+# Count Introgressed Mutations and Tract Statistics
+######################################################
 
 #Get the 'diagnostic SNPs' that indicate introgression
 def count_introgressed_mutations(ts, introgression_events):
@@ -198,12 +196,12 @@ def count_introgressed_mutations(ts, introgression_events):
     if introgressed_tracts:
         current_start, current_end = introgressed_tracts[0]
         for start, end in introgressed_tracts[1:]:
-            if start <= current_end:  # Overlap
+            if start <= current_end:  # Overlapping tract; extend current tract
                 current_end = max(current_end, end)
             else:  # No overlap
                 merged_tracts.append((current_start, current_end))
                 current_start, current_end = start, end
-        merged_tracts.append((current_start, current_end))  # Add the last tract
+        merged_tracts.append((current_start, current_end))  # Append the last tract
 
     # Calculate the total length of introgressed tracts
     total_tract_length = sum(end - start for start, end in merged_tracts)
@@ -224,7 +222,7 @@ def count_introgressed_mutations(ts, introgression_events):
     return num_tracts, average_tract_length, diagnostic_mutations, total_tract_length
 
 
-#Call the function
+# Calculate statistics related to introgressed regions
 num_int_tracts, average_int_tract_length, num_diagnostic_mutations, total_introgressed_length = count_introgressed_mutations(ts_mutes, introgression_events)
 
 print(f"Number of introgressed tracts: {num_int_tracts}")
@@ -232,49 +230,40 @@ print(f"Average length of int tract: {average_int_tract_length}")
 print(f"Number of 'diagnostic' mutations in introgressed tracts: {num_diagnostic_mutations}")
 print(f"Total length of non-overlapping introgressed tracts: {total_introgressed_length}")
 
-# write to a quant file
+# Write simulation statistics to a quantitative log file
 quant_log_file = "Sim_stats_log.tsv"
-
-#Create the quantitative data log file
 if not os.path.isfile(quant_log_file):
 	with open(quant_log_file, "a") as f:
 		f.write("JOBname\tSeq_len\tProp_int\tMut_rate\tRecomb_rate\tnum_tracts\taverage_length\ttotal_divergence\tnum_int_tracts\taverage_int_tract_length\ttotal_introgressed_length\tnum_diagnostic_mutations\n")
 
-#Write to the quant file
 with open (quant_log_file, "a") as f:
 	f.write(f"{JOBname}\t{Seq_len}\t{Prop_int}\t{Mut_rate}\t{Recomb_rate}\t{num_tracts}\t{average_length}\t{total_divergence}\t{num_int_tracts}\t{average_int_tract_length}\t{total_introgressed_length}\t{num_diagnostic_mutations}\n")
 
 
-## END simulation statistics
+##################################
+# Write Simulated Data to FASTA
+##################################
 
-
-
-#write a fasta file
+# Define the filename for the FASTA output
 fasta_filename = os.path.join(output_folder, f"{JOBname}.fa")
+# Write the simulated sequence with mutations to a FASTA file
 ts_mutes.write_fasta(fasta_filename, reference_sequence=tskit.random_nucleotides(ts.sequence_length))
 
-### Pseudo code for editing file:
-#Create file handle for the fasta file that we wrote (open for reading)
+#######################################
+# Edit FASTA Headers for Readability
+#######################################
 
-#Create file handle for a new file (open for 'appending')
-
-#Loop through and read each line of original file
-#fasta_read_filename = JOBname+".fa"
-#fasta_write_filename = JOBname+".fa.tmp"
-#fasta_read_handle = open(fasta_read_filename, "r")
-#fasta_write_handle = open(fasta_write_filename, "a")
-#Create an empty dictionary
-seq_dict = {}
-
-#Loop through the line in the file
+# Define file names for reading and writing
 fasta_read_filename = fasta_filename
 fasta_write_filename = fasta_filename + ".tmp"
+
+# Open the original FASTA file for reading and a temporary file for writing the updated headers
 with open(fasta_read_filename, 'r') as fasta_read_handle, open(fasta_write_filename, "a") as fasta_write_handle:
     for line in fasta_read_handle:
         if line.startswith(">"):
-            #Use the replae method to replace (use your dictionary)
-            id_temp = line.strip() #Removes "\n"
-            id_clean = id_temp.replace(">", "") #Removes ">" by replacing with nothing.
+            # Clean and update the sequence ID
+            id_temp = line.strip() # Removes "\n"
+            id_clean = id_temp.replace(">", "") # Removes ">" by replacing with nothing.
             id_new = ''
             if id_clean == "n0":
                     id_new = "Pop1"
@@ -293,32 +282,27 @@ with open(fasta_read_filename, 'r') as fasta_read_handle, open(fasta_write_filen
 sh.move(fasta_write_filename, fasta_read_filename)
 
 
-## Track the tracts that underwent migration
-
+########################################################
+# Track Migration Tracts and Export Introgression Info
+########################################################
 def get_migrating_tracts(ts, dest_pop):
+    """
+    Extracts migration tracts for a given destination population
+    """
     dest_id = [p.id for p in ts.populations() if p.metadata['name']==dest_pop][0]
-    #print(dest_id)
-    #print(dest_pop)
     migrating_tracts = []
-    # Get all tracts that migrated into the destination population
     for migration in ts.migrations():
-        #print(migration.dest)
         if migration.dest == dest_id:
             migrating_tracts.append((int(migration.left), int(migration.right)))
-            #print(migrating_tracts)
     return np.array(migrating_tracts) 
 
-#Get the tracts from Pop3 -> Pop2
-migrating_pop3_to_pop2 = get_migrating_tracts(ts, "Pop3")
 
-#print("hello")
-#Get the tracts from Pop2 -> Pop3
-migrating_pop2_to_pop3 = get_migrating_tracts(ts, "Pop2")
-
-#Get the overlap (reciprocal introgression)
 def find_overlap_intervals(arr1, arr2):
+    """
+    Finds overlapping intervals between two sets of tracts
+    Returns the overlapping regions as a numpy array
+    """
     overlap_intervals = []
-    
     for interval1 in arr1:
         for interval2 in arr2:
             # Check if the intervals overlap
@@ -328,37 +312,38 @@ def find_overlap_intervals(arr1, arr2):
                 overlap_stop = min(interval1[1], interval2[1])
                 overlap_intervals.append([overlap_start, overlap_stop])
     
-    #create dataframe
+    # Remove duplicate intervals by converting to a DataFrame and dropping duplicates
     overlap_intervals_df = pd.DataFrame(overlap_intervals)
-    
-    #remove any duplicate rows from the dataframe
     overlap_intervals_df_nodup = overlap_intervals_df.drop_duplicates()
-
-    #return the array
     return np.array(overlap_intervals_df_nodup)
 
+# Get the migration tracts from Pop3 -> Pop2
+migrating_pop3_to_pop2 = get_migrating_tracts(ts, "Pop2")
+
+# Get the migration tracts from Pop2 -> Pop3
+migrating_pop2_to_pop3 = get_migrating_tracts(ts, "Pop3")
+
+# Get the reciprocal introgression (overlapping) tracts
 recip_introgression = find_overlap_intervals(migrating_pop3_to_pop2, migrating_pop2_to_pop3)
 
-#Check for the presence of all three introgression types
-
+# Verify that all types of introgression are present; exit if any type is missing
 if len(migrating_pop3_to_pop2) == 0 or len(migrating_pop2_to_pop3) == 0 or len(recip_introgression) == 0:
     print("Error: Not all types of introgression (pop3 to pop2, pop2 to pop3, reciprocal) exist. Revise parameters.")
     sys.exit()
-#Output to CSV
-col1 = "Introgression_Type"
-col2 = "Start_Site"
-col3 = "Stop_Site"
 
+
+# Export introgression tract information to CSV
 output_file= os.path.join(output_folder, f"{JOBname}_introgression_info.csv")
-df = pd.DataFrame(columns = [col1,col2,col3])
+df = pd.DataFrame(columns = ["Introgression_Type", "Start_Site", "Stop_Site"])
 
+# Add tracts for each introgression type to the DataFrame
 for migration in migrating_pop3_to_pop2:
-	 df.loc[len(df)] = {col1: "pop3 to pop2", col2: migration[0], col3: migration[1]}
+	 df.loc[len(df)] = {"Introgression_Type": "pop3 to pop2", "Start_Site": migration[0], "Stop_Site": migration[1]}
 
 for migration in migrating_pop2_to_pop3:
-	df.loc[len(df)] = {col1: "pop2 to pop3", col2: migration[0], col3: migration[1]}
+	df.loc[len(df)] = {"Introgression_Type": "pop2 to pop3", "Start_Site": migration[0], "Stop_Site": migration[1]}
 
 for migration in recip_introgression:
-	df.loc[len(df)] = {col1: "Recip", col2: migration[0], col3: migration[1]}
+	df.loc[len(df)] = {"Introgression_Type": "Recip", "Start_Site": migration[0], "Stop_Site": migration[1]}
 
 df.to_csv(output_file, index=False)
