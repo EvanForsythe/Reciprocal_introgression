@@ -6,18 +6,11 @@
 #https://tskit.dev/tskit/docs/stable/python-api.html?highlight=fasta#tskit.TreeSequence.as_fasta
 
 import sys
-import random
-import collections
-import subprocess
-import matplotlib.pyplot as plt
 import msprime
 import numpy as np
-import dataclasses
 import tskit
 import os
-import re
 import argparse
-import math
 import pandas as pd
 import shutil as sh
 import itertools
@@ -26,8 +19,6 @@ import itertools
 # Set wd
 working_dir = sys.path[0]+'/' 
 os.chdir(working_dir)
-
-# os.chdir('/Users/esforsythe/Documents/OSU/Work/Research/Reciprocal_introgression/Reciprocal_introgression/')
 
 # Set up an argumanet parser to accept command-line inputs
 parser = argparse.ArgumentParser(description='Script for simulating introgression')
@@ -66,18 +57,19 @@ t_sp1234=args.t_sp1234
 # Create an output folder for this simulation run
 output_folder = f"output_{JOBname}"
 if not os.path.exists(output_folder):
-    os.makedirs(output_folder)
+     os.makedirs(output_folder)
 
-    #################################
-    # SET UP DEMOGRAPHIC MODEL 
-	#################################
+#################################
+# SET UP DEMOGRAPHIC MODEL 
+#################################
 
-# Define taxa names for simulation
+# Define taxon names for simulation
 taxa_names=["Pop1", "Pop2", "Pop3", "Outgroup"]
 
-# Initialize the demographic model with nsprime.Demography
-demography = msprime.Demography()
+print(f"Running simulations from the following populations {str(taxa_names)}...\n")
 
+# Initialize the demographic model with msprime.Demography
+demography = msprime.Demography()
 
 # Loop through taxa and add each as a population to the demography
 for t_name in taxa_names:
@@ -95,15 +87,16 @@ introgression_events.append({"time": t_int, "source": "Pop2", "dest": "Pop3", "p
 demography.add_mass_migration(time=t_int, source="Pop3", dest="Pop2", proportion=Prop_int)
 introgression_events.append({"time": t_int, "source": "Pop3", "dest": "Pop2", "proportion": Prop_int})
 
-
 # Define speciation events by adding mass migrations to merge populations
 demography.add_mass_migration(time=t_sp12, source="Pop2", dest="Pop1", proportion=1)
 demography.add_mass_migration(time=t_sp123, source="Pop3", dest="Pop1", proportion=1)
 demography.add_mass_migration(time=t_sp1234, source="Pop1", dest="Outgroup", proportion=1)
 
-    ####################################
-    # SIMULATE GENEAOLGY AND MUTATIONS 
-	####################################
+####################################
+# SIMULATE GENEOLGY AND MUTATIONS 
+####################################
+
+print(f"Simulating geneology and mutations...\n")
 
 # Simulate tree sequence with recombination using msprime
 ts = msprime.sim_ancestry(
@@ -123,10 +116,9 @@ ts = msprime.sim_ancestry(
 # Generate mutations along the simulated tree sequence
 ts_mutes = msprime.sim_mutations(ts, rate=Mut_rate, random_seed=None)
 
-
-    #################################
-    # COMPUTE SIMULATION STATISTICS
-	#################################
+#################################
+# COMPUTE SIMULATION STATISTICS
+#################################
 
 # Count the number of migration tracts (haplotype blocks) and calculate their average length
 total_length = 0
@@ -139,6 +131,8 @@ for migration in ts.migrations():
 
 # Calculate the average length
 average_length = total_length / num_tracts if num_tracts > 0 else 0
+
+print(f"{num_tracts} total tracts simulated with an average length of {average_length}.\n")
 
 # Function to calculate total sequence divergence (average pairwise divergence)
 def calculate_total_divergence(tree_sequence):
@@ -155,7 +149,7 @@ def calculate_total_divergence(tree_sequence):
 
 
 total_divergence = calculate_total_divergence(ts_mutes)
-print(f"Total sequence divergence (average pairwise divergence): {total_divergence:.6f} substitutions/site")
+print(f"Total sequence divergence (average pairwise divergence): {total_divergence:.6f} substitutions/site\n")
 
 ######################################################
 # Count Introgressed Mutations and Tract Statistics
@@ -222,27 +216,33 @@ def count_introgressed_mutations(ts, introgression_events):
     return num_tracts, average_tract_length, diagnostic_mutations, total_tract_length
 
 
+print(f"Tallying statistics about simulations...\n")
+
 # Calculate statistics related to introgressed regions
 num_int_tracts, average_int_tract_length, num_diagnostic_mutations, total_introgressed_length = count_introgressed_mutations(ts_mutes, introgression_events)
 
 print(f"Number of introgressed tracts: {num_int_tracts}")
 print(f"Average length of int tract: {average_int_tract_length}")
 print(f"Number of 'diagnostic' mutations in introgressed tracts: {num_diagnostic_mutations}")
-print(f"Total length of non-overlapping introgressed tracts: {total_introgressed_length}")
+print(f"Total length of non-overlapping introgressed tracts: {total_introgressed_length}\n")
 
 # Write simulation statistics to a quantitative log file
 quant_log_file = "Sim_stats_log.tsv"
 if not os.path.isfile(quant_log_file):
-	with open(quant_log_file, "a") as f:
-		f.write("JOBname\tSeq_len\tProp_int\tMut_rate\tRecomb_rate\tnum_tracts\taverage_length\ttotal_divergence\tnum_int_tracts\taverage_int_tract_length\ttotal_introgressed_length\tnum_diagnostic_mutations\n")
+     print("Creating Sim_stats_log.tsv...\n")
+     with open(quant_log_file, "a") as f:
+          f.write("JOBname\tSeq_len\tProp_int\tMut_rate\tRecomb_rate\tnum_tracts\taverage_length\ttotal_divergence\tnum_int_tracts\taverage_int_tract_length\ttotal_introgressed_length\tnum_diagnostic_mutations\n")
 
+print("Adding to Sim_stats_log.tsv...\n")
 with open (quant_log_file, "a") as f:
-	f.write(f"{JOBname}\t{Seq_len}\t{Prop_int}\t{Mut_rate}\t{Recomb_rate}\t{num_tracts}\t{average_length}\t{total_divergence}\t{num_int_tracts}\t{average_int_tract_length}\t{total_introgressed_length}\t{num_diagnostic_mutations}\n")
+     f.write(f"{JOBname}\t{Seq_len}\t{Prop_int}\t{Mut_rate}\t{Recomb_rate}\t{num_tracts}\t{average_length}\t{total_divergence}\t{num_int_tracts}\t{average_int_tract_length}\t{total_introgressed_length}\t{num_diagnostic_mutations}\n")
 
 
 ##################################
 # Write Simulated Data to FASTA
 ##################################
+
+print("Writing simulation data to fasta file...\n")
 
 # Define the filename for the FASTA output
 fasta_filename = os.path.join(output_folder, f"{JOBname}.fa")
@@ -252,6 +252,8 @@ ts_mutes.write_fasta(fasta_filename, reference_sequence=tskit.random_nucleotides
 #######################################
 # Edit FASTA Headers for Readability
 #######################################
+
+print("Editing seq IDs in fasta file...\n")
 
 # Define file names for reading and writing
 fasta_read_filename = fasta_filename
@@ -296,6 +298,7 @@ def get_migrating_tracts(ts, dest_pop):
             migrating_tracts.append((int(migration.left), int(migration.right)))
     return np.array(migrating_tracts) 
 
+print("Finding overlapping tracts (i.e. reciprocal introgression tracts)\n")
 
 def find_overlap_intervals(arr1, arr2):
     """
@@ -328,11 +331,12 @@ recip_introgression = find_overlap_intervals(migrating_pop3_to_pop2, migrating_p
 
 # Verify that all types of introgression are present; exit if any type is missing
 if len(migrating_pop3_to_pop2) == 0 or len(migrating_pop2_to_pop3) == 0 or len(recip_introgression) == 0:
-    print("Error: Not all types of introgression (pop3 to pop2, pop2 to pop3, reciprocal) exist. Revise parameters.")
+    print("Error: Not all types of introgression (pop3 to pop2, pop2 to pop3, reciprocal) exist. Revise parameters. Quitting...")
     sys.exit()
 
+print("Creating a dataframe with simulation info...\n")
 
-# Export introgression tract information to CSV
+# Write introgression tract information to CSV
 output_file= os.path.join(output_folder, f"{JOBname}_introgression_info.csv")
 df = pd.DataFrame(columns = ["Introgression_Type", "Start_Site", "Stop_Site"])
 
@@ -346,4 +350,8 @@ for migration in migrating_pop2_to_pop3:
 for migration in recip_introgression:
 	df.loc[len(df)] = {"Introgression_Type": "Recip", "Start_Site": migration[0], "Stop_Site": migration[1]}
 
+print("writing the dataframe as a csv file...\n")
+
 df.to_csv(output_file, index=False)
+
+print("Done with Int_sim run!")

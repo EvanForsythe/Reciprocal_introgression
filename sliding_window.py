@@ -5,11 +5,7 @@ import pandas as pd
 from Bio import SeqIO
 from Bio import AlignIO
 import re
-import glob
 import sys
-import matplotlib
-import math
-import matplotlib.pyplot as plt
 
 # Debug print of command-line arguments for troubleshooting
 print('Arguments: ', str(sys.argv))
@@ -17,7 +13,6 @@ print('Arguments: ', str(sys.argv))
 #################################
 # Parse Command-Line Arguments
 #################################
-
 
 #Create an argument parser object
 parser = argparse.ArgumentParser(description= "Sliding window analysis")
@@ -47,6 +42,8 @@ P3 = args.P3
 output_folder = f"output_{job_name}"
 seq_file = os.path.join(output_folder, f"{job_name}.fa")
 
+print(f"Analyzing the fasta file located at: {seq_file}\n")
+
 # Define column names for the sliding window results DataFrame
 col1 = 'Window_Number'
 col2 = 'Window_Start_Site'
@@ -65,31 +62,33 @@ r2 = re.compile(P2)
 r3 = re.compile(P3)
 rO = re.compile(outgroup)
 
+print("Created dataframe with the following column names:")
 print(df)
-
 
 ####################################
 # Read Sequence Data and Alignment
 ####################################
 
-
 # Parse the FASTA file and store sequences in a dictionary
 sequence_data = SeqIO.to_dict(SeqIO.parse(seq_file, 'fasta'))
-keys = list(sequence_data.keys()) #Possibly redundant?
 
-#Print the number of sequences (rows) in the alignment
-num_sequences = len(keys)
-print("Number of sequences:", num_sequences)
+# Get the number of sequences (rows) directly from the dictionary
+num_sequences = len(sequence_data)
+print(f"Number of sequences:{num_sequences}")
 
-# Read the full alignment to determine the total number of sites (columns)
-alignment = AlignIO.read(seq_file, 'fasta')
-num_sites = alignment.get_alignment_length()
-print("Number of sites:", num_sites)
-
+# Get the number of sites (columns) from the length of the first sequence
+# Assuming all sequences are aligned and of equal length
+num_sites = len(next(iter(sequence_data.values())).seq)
+print(f"Number of sites:{num_sites}")
 
 # Deterimne if the number fo windows that fit into the alignment based on win_len
 n_windows = num_sites // args.win_len
-print("Number of windows:", n_windows)
+print(f"Number of windows:{n_windows}")
+
+# Get the list of keys (sequence names)
+keys = list(sequence_data.keys())
+
+print(f"Sequence IDs {keys}")
 
 # Identify the sequences corresponding to each species using regex matching
 P1 = next(filter(r1.match,keys))
@@ -105,8 +104,13 @@ print("O:", O)
 # Sliding Window Analysis Loop
 ################################
 
+print("Starting sliding window analysis...\n")
+
 # Loop over each window and compute counts of informative sites for D-statistic
 for j in range(n_windows):
+
+    if j % 100 == 0:
+        print(f"Finshed {j} windows...")
 
     # Calculate start and stop positions for the current window    
     start = j * win_len
@@ -135,16 +139,15 @@ for j in range(n_windows):
         # Identify AABB pattern: Outgroup = P3 and P1 = P3
         elif sequence_data[O][i] == sequence_data[P3][i] and sequence_data[P1][i] == sequence_data[P2][i]:
             AABB += 1
-
-                        
+         
     # Calculate the D-statistic for the current window if informative sites exist
     if ABBA + BABA > 0:
         D = (ABBA - BABA) / (ABBA + BABA)
     else:
         D = 0
         
-    # Record the window nunmber, positions, site counts, and computed D-statistic in the DataFrame
-    df.loc[j] = {col1 :j + 1, col2 :start + 1, col3 :stop, col4: ABBA, col5 :BABA,col6 :AABB, col7 :D}
+    # Record the window number, positions, site counts, and computed D-statistic in the DataFrame as a list
+    df.loc[j] = [j + 1, start + 1, stop, ABBA, BABA, AABB, D]
 
 # Print the column names for verification
 print("Column names:", df.columns)
@@ -160,6 +163,8 @@ if df['Number_of_AABB_Sites'].median() < 10:
 ###############################################
 # Save Results to CSV
 ###############################################
+
+print("Saving windows df to the csv file.")
 
 # Define output filename for sliding window results
 output_file = os.path.join(output_folder, f"{job_name}_windows_with_d_stat.csv")
