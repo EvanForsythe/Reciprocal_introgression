@@ -39,6 +39,12 @@ tracts_df = pd.read_csv(sim_file)
 print(f"Reading in window data from {win_file}\n")
 win_df = pd.read_csv(win_file)
 
+# Explicitly cast to integers to avoid any possible mismatch issues (float and int) later.
+tracts_df['Start_Site'] = tracts_df['Start_Site'].astype(int)
+tracts_df['Stop_Site'] = tracts_df['Stop_Site'].astype(int)
+win_df['Window_Start_Site'] = win_df['Window_Start_Site'].astype(int)
+win_df['Window_Stop_Site'] = win_df['Window_Stop_Site'].astype(int)
+
 # Sort the introgression dataframe by start site
 tracts_df_sorted = tracts_df.sort_values(by='Start_Site')
 current_site = 0
@@ -54,8 +60,8 @@ for index, row in tracts_df_sorted.iterrows():
     if row['Start_Site'] > current_site:
         # Create a new "No Introgression" row that fills the gap
         new_row = pd.DataFrame({'Introgression_Type': ['No_Int'], 
-                                'Start_Site': [int(current_site)], 
-                                'Stop_Site': [int(row['Start_Site']) - 1]})
+                                'Start_Site': [current_site], 
+                                'Stop_Site': [row['Start_Site'] - 1]})
         new_rows.append(new_row)
     
     # Update the current site counter to be **past** the current tract's stop position
@@ -71,54 +77,81 @@ if last_row['Window_Stop_Site'] > current_site:
     new_rows.append(new_row)
 
 # Concatenate all new rows at once
-if new_rows:
-    tracts_df_sorted = pd.concat([tracts_df_sorted] + new_rows, ignore_index=True)
+tracts_df_sorted = pd.concat([tracts_df_sorted] + new_rows, ignore_index=True)
 
 # Re-sort the dataframe to ensure tracts are in order
 tracts_df_re_sorted = tracts_df_sorted.sort_values(by='Start_Site')
 
-# Collect rows in a list
-new_windows_list = []
+# Initialize all windows explicitly as No_Int
+win_df['Introgression_Type'] = 'No_Int'
 
-# Lists to store computed values
-Davglist = []   # Stores average D-statistics for each introgression block
-Intwindows = []  # Stores window numbers associated with introgressed tracts
+# Initialize a list to store window subsets and D-stat averages
+Intwindows = []
+
 
 print(f"assigning introgression type to windows...\n")
 
 # Assign introgression type to corresponding windows
 for ind, row in tracts_df_re_sorted.iterrows():
+	# Temporarily store the introgression type and its genomic boundaries (start/stop)
     temp_int_type = row['Introgression_Type']
     temp_block_start = row['Start_Site']
     temp_block_stop = row['Stop_Site']
 
-    # Select windows that fall within introgression blocks
-    filteredtemp = win_df[(win_df['Window_Start_Site'] >= temp_block_start) & 
-                          (win_df['Window_Stop_Site'] <= temp_block_stop)]
+    # Create a boolean condition to select ONLY the windows that lie fully within the boundaries of this introgression tract. (ensures no partial overlaps)
+    condition = (
+		(win_df['Window_Start_Site'] >= temp_block_start) & 
+        (win_df['Window_Stop_Site'] <= temp_block_stop)
+	)
 
-    # Skip empty results
-    if not filteredtemp.empty:
-        filteredtemp = filteredtemp.copy()
-        filteredtemp['Introgression_Type'] = temp_int_type
-        new_windows_list.append(filteredtemp)
+	# Update the windows explicitly ONLY if they haven't been previously assigned another introgression type. (They must still be labeled 'No_Int' to get updated.)
+    win_df.loc[condition & (win_df['Introgression_Type'] == 'No_Int'), 'Introgression_Type'] = temp_int_type
 
-        # Compute average D-statistic for the windows within the introgression tract
-        Dstatslist = filteredtemp['D_Statistic'].to_numpy()
-        Daverage = np.mean(Dstatslist) if len(Dstatslist) > 0 else np.nan
-    else:
-        Daverage = np.nan
+	# Explicitly overwrite with reciprocal introgression type
+    recip_tracts = tracts_df_re_sorted[tracts_df_re_sorted['Introgression_Type'] == 'Recip']
 
-    # Add D average values to list
-    Davglist.append(Daverage)
+    for _, recip_row in recip_tracts.iterrows():
+        recip_start, recip_stop = recip_row['Start_Site'], recip_row['Stop_Site']
+
+        recip_condition = (
+            (win_df['Window_Start_Site'] >= recip_start) &
+            (win_df['Window_Stop_Site'] <= recip_stop)
+		)
+
+        win_df.loc[recip_condition, 'Introgression_Type'] = 'Recip'
+
+
     
-    # Track window numbers associated with introgression
+    # For debugging purposes, create a temporary DataFrame showing exactly which windows were assigned to this introgression type during this iteration
+    filteredtemp = win_df.loc[condition & (win_df['Introgression_Type'] == temp_int_type)].copy()
+
+	# DEBUGGING PRINTS
+    print(f"Introgression block [{temp_int_type}]: {temp_block_start}-{temp_block_stop}")
+    print(f"Assigned windows: \n{filteredtemp[['Window_Number', 'Window_Start_Site', 'Window_Stop_Site']]}\n")
+
+
+    valid_windows_df = win_df.dropna(subset=['Introgression_Type'])
+
+    # Compute tract averages clearly again after updating
+    Davglist = []
+    for _, row in tracts_df_re_sorted.iterrows():
+        condition = (
+            (valid_windows_df['Window_Start_Site'] >= row['Start_Site']) &
+            (valid_windows_df['Window_Stop_Site'] <= row['Stop_Site'])
+		)
+        tract_windows = valid_windows_df.loc[condition, 'D_Statistic']
+        Daverage = tract_windows.mean() if not tract_windows.empty else np.nan
+        Davglist.append(Daverage)
+
+    tracts_df_re_sorted['Average_Dstat_for_windows_in_tract'] = Davglist
+    
+    
+    # Track window numbers assigned in this iteration
     Intwindows.extend(filteredtemp['Window_Number'].tolist())
 
-# Concatenate all new windows at once
-new_windows_df = pd.concat(new_windows_list, ignore_index=True)
 
 # Save the updated windows file
-new_windows_df.to_csv(os.path.join(output_folder, f"{job_name}_windows_with_int_info.csv"), index=False)
+win_df.to_csv(os.path.join(output_folder, f"{job_name}_windows_with_int_info.csv"), index=False)
 
 # Add the average D-stat values for each tract to the dataframe
 tracts_df_re_sorted['Average_Dstat_for_windows_in_tract'] = Davglist
@@ -132,10 +165,6 @@ tracts_df_re_sorted.to_csv(output_file, index=False)
 print("printing win_df")
 print(win_df)
 
-print("printing new_windows_df")
-print(new_windows_df)
-
-valid_windows_df = new_windows_df.dropna(subset=['Introgression_Type'])
 
 print("printing valid_windows_df")
 print(valid_windows_df)
