@@ -83,7 +83,7 @@ tracts_df_sorted = pd.concat([tracts_df_sorted] + new_rows, ignore_index=True)
 tracts_df_re_sorted = tracts_df_sorted.sort_values(by='Start_Site')
 
 # Initialize all windows explicitly as No_Int
-win_df['Introgression_Type'] = 'No_Int'
+win_df['Introgression_Type'] = 'NA'
 
 # Initialize a list to store window subsets and D-stat averages
 Intwindows = []
@@ -91,85 +91,39 @@ Intwindows = []
 
 print(f"assigning introgression type to windows...\n")
 
-# Assign introgression type to corresponding windows
-for ind, row in tracts_df_re_sorted.iterrows():
-	# Temporarily store the introgression type and its genomic boundaries (start/stop)
-    temp_int_type = row['Introgression_Type']
-    temp_block_start = row['Start_Site']
-    temp_block_stop = row['Stop_Site']
+print(tracts_df_re_sorted.head())
 
-    # Create a boolean condition to select ONLY the windows that lie fully within the boundaries of this introgression tract. (ensures no partial overlaps)
-    condition = (
-		(win_df['Window_Start_Site'] >= temp_block_start) & 
-        (win_df['Window_Stop_Site'] <= temp_block_stop)
-	)
+# Loop through the windows and pull assign introgression type
 
-	# Update the windows explicitly ONLY if they haven't been previously assigned another introgression type. (They must still be labeled 'No_Int' to get updated.)
-    win_df.loc[condition & (win_df['Introgression_Type'] == 'No_Int'), 'Introgression_Type'] = temp_int_type
+for index in win_df.index:
+    temp_row=win_df.iloc[index]
+    temp_start=temp_row["Window_Start_Site"]
+    temp_stop=temp_row["Window_Stop_Site"]
+    temp_midpoint=(temp_start+temp_stop)//2
 
-	# Explicitly overwrite with reciprocal introgression type
-    recip_tracts = tracts_df_re_sorted[tracts_df_re_sorted['Introgression_Type'] == 'Recip']
+    # Find the row where Start_Site <= number and Stop_Site > number
+    matching_rows = tracts_df_re_sorted[
+        (tracts_df_re_sorted['Start_Site'] <= temp_midpoint) &
+        (tracts_df_re_sorted['Stop_Site'] > temp_midpoint)
+    ]
 
-    for _, recip_row in recip_tracts.iterrows():
-        recip_start, recip_stop = recip_row['Start_Site'], recip_row['Stop_Site']
+    # Determine the output based on how many matches we found
+    if len(matching_rows) == 1:
+        temp_int_type = matching_rows.iloc[0]['Introgression_Type']
+    elif len(matching_rows) > 1:
+        # Prioritize 'Recip' if it exists
+        if 'Recip' in matching_rows['Introgression_Type'].values:
+            temp_int_type = 'Recip'
+        else:
+            temp_int_type="Unknown"
+            print(f"Warning: couldn't find correct tract for window (index:{index})")
+    else:
+        temp_int_type = None  # Or raise an error if no matching interval found
 
-        recip_condition = (
-            (win_df['Window_Start_Site'] >= recip_start) &
-            (win_df['Window_Stop_Site'] <= recip_stop)
-		)
-
-        win_df.loc[recip_condition, 'Introgression_Type'] = 'Recip'
-
-
-    
-    # For debugging purposes, create a temporary DataFrame showing exactly which windows were assigned to this introgression type during this iteration
-    filteredtemp = win_df.loc[condition & (win_df['Introgression_Type'] == temp_int_type)].copy()
-
-	# DEBUGGING PRINTS
-    print(f"Introgression block [{temp_int_type}]: {temp_block_start}-{temp_block_stop}")
-    print(f"Assigned windows: \n{filteredtemp[['Window_Number', 'Window_Start_Site', 'Window_Stop_Site']]}\n")
-
-
-    valid_windows_df = win_df.dropna(subset=['Introgression_Type'])
-
-    # Compute tract averages clearly again after updating
-    Davglist = []
-    for _, row in tracts_df_re_sorted.iterrows():
-        condition = (
-            (valid_windows_df['Window_Start_Site'] >= row['Start_Site']) &
-            (valid_windows_df['Window_Stop_Site'] <= row['Stop_Site'])
-		)
-        tract_windows = valid_windows_df.loc[condition, 'D_Statistic']
-        Daverage = tract_windows.mean() if not tract_windows.empty else np.nan
-        Davglist.append(Daverage)
-
-    tracts_df_re_sorted['Average_Dstat_for_windows_in_tract'] = Davglist
-    
-    
-    # Track window numbers assigned in this iteration
-    Intwindows.extend(filteredtemp['Window_Number'].tolist())
-
+    win_df.loc[index, 'Introgression_Type'] = temp_int_type
 
 # Save the updated windows file
 win_df.to_csv(os.path.join(output_folder, f"{job_name}_windows_with_int_info.csv"), index=False)
-
-# Add the average D-stat values for each tract to the dataframe
-tracts_df_re_sorted['Average_Dstat_for_windows_in_tract'] = Davglist
-
-# Save the updated introgression file
-output_file = os.path.join(output_folder, f"{job_name}_figsandstats.csv") 
-
-print(f"Writing the file {output_file}\n")
-tracts_df_re_sorted.to_csv(output_file, index=False)
-
-print("printing win_df")
-print(win_df)
-
-
-print("printing valid_windows_df")
-print(valid_windows_df)
-
-
 
 ##########################
 ### Plot Introgressed Tracts ###
@@ -211,12 +165,12 @@ plt.hlines(
 	
 #plt.plot(valid_windows_df['Window_Start_Site'], valid_windows_df['D_Statistic'], '-', color = 'blue', linewidth = 1)     
 # Plot the continuous line in a neutral color (e.g., gray)
-plt.plot(valid_windows_df['Window_Start_Site'], valid_windows_df['D_Statistic'], '-', color = 'gray', linewidth = 1)     
+plt.plot(win_df['Window_Start_Site'], win_df['D_Statistic'], '-', color = 'gray', linewidth = 1)     
 
 # Plot points colored by Introgression_Type
 for intro_type, color in color_palette.items():
     # Filter the dataframe for the current introgression type
-    subset_df = valid_windows_df[valid_windows_df['Introgression_Type'] == intro_type]
+    subset_df = win_df[win_df['Introgression_Type'] == intro_type]
     
     # Plot the points for this subset
     plt.scatter(subset_df['Window_Start_Site'], 
@@ -251,7 +205,7 @@ print(f"Creating violin plot figure...\n")
 category_order = ["No_Int", "pop2 to pop3", "pop3 to pop2", "Recip"]
 
 
-sns.violinplot(x="Introgression_Type", y="D_Statistic", data=valid_windows_df, hue="Introgression_Type",
+sns.violinplot(x="Introgression_Type", y="D_Statistic", data=win_df, hue="Introgression_Type",
                order=category_order, palette=color_palette, cut=0, bw_adjust=0.5, alpha=0.7)
 plt.ylim(-1, 1)
 plt.axhline(y=0, color='r', linestyle='--')
@@ -260,8 +214,8 @@ plt.savefig(violin_file)
 plt.close()
 
 # Compute Statistics + Pass/Fail
-avg_vals = valid_windows_df.groupby('Introgression_Type')['D_Statistic'].mean()
-med_vals = valid_windows_df.groupby('Introgression_Type')['D_Statistic'].median()
+avg_vals = win_df.groupby('Introgression_Type')['D_Statistic'].mean()
+med_vals = win_df.groupby('Introgression_Type')['D_Statistic'].median()
 
 print("Mean values:\n")
 print(avg_vals)
